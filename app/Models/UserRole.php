@@ -11,9 +11,12 @@ class UserRole extends Model
         'user_id',
         'role',
         'campus_id',
-        'complaint_type_id'
+        'complaint_type_id',
     ];
 
+    /**
+     * Get the user that owns the role.
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -5,32 +6,32 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 
 interface Props {
-    canResetPassword: boolean;
     status?: string;
 }
 
-export default function Login({ canResetPassword, status }: Props) {
+export default function Register({ status }: Props) {
     const { data, setData, post, processing, errors, reset } = useForm({
+        name: '',
         email: '',
         password: '',
-        remember: false,
+        password_confirmation: '',
     });
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/login', {
-            onFinish: () => reset('password'),
+        post('/register', {
+            onFinish: () => reset('password', 'password_confirmation'),
         });
     };
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="max-w-md w-full p-6 bg-white rounded-lg shadow-md">
-                <Head title="Login" />
+                <Head title="Register" />
 
                 <div className="text-center mb-8">
-                    <h2 className="text-2xl font-bold text-gray-800">Welcome Back</h2>
-                    <p className="text-gray-600 mt-2">Please sign in to your account</p>
+                    <h2 className="text-2xl font-bold text-gray-800">Create Account</h2>
+                    <p className="text-gray-600 mt-2">Please fill in your details</p>
                 </div>
 
                 {status && (
@@ -41,6 +42,21 @@ export default function Login({ canResetPassword, status }: Props) {
 
                 <form onSubmit={submit} className="space-y-6">
                     <div>
+                        <InputLabel htmlFor="name" value="Name" />
+                        <TextInput
+                            id="name"
+                            name="name"
+                            value={data.name}
+                            className="mt-1 block w-full"
+                            autoComplete="name"
+                            isFocused={true}
+                            onChange={(e) => setData('name', e.target.value)}
+                            required
+                        />
+                        <InputError message={errors.name} className="mt-2" />
+                    </div>
+
+                    <div>
                         <InputLabel htmlFor="email" value="Email" />
                         <TextInput
                             id="email"
@@ -49,9 +65,8 @@ export default function Login({ canResetPassword, status }: Props) {
                             value={data.email}
                             className="mt-1 block w-full"
                             autoComplete="username"
-                            isFocused={true}
                             onChange={(e) => setData('email', e.target.value)}
-                            placeholder="Enter your email"
+                            required
                         />
                         <InputError message={errors.email} className="mt-2" />
                     </div>
@@ -64,11 +79,26 @@ export default function Login({ canResetPassword, status }: Props) {
                             name="password"
                             value={data.password}
                             className="mt-1 block w-full"
-                            autoComplete="current-password"
+                            autoComplete="new-password"
                             onChange={(e) => setData('password', e.target.value)}
-                            placeholder="Enter your password"
+                            required
                         />
                         <InputError message={errors.password} className="mt-2" />
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="password_confirmation" value="Confirm Password" />
+                        <TextInput
+                            id="password_confirmation"
+                            type="password"
+                            name="password_confirmation"
+                            value={data.password_confirmation}
+                            className="mt-1 block w-full"
+                            autoComplete="new-password"
+                            onChange={(e) => setData('password_confirmation', e.target.value)}
+                            required
+                        />
+                        <InputError message={errors.password_confirmation} className="mt-2" />
                     </div>
 
                     <div>
@@ -76,7 +106,7 @@ export default function Login({ canResetPassword, status }: Props) {
                             className="w-full justify-center py-3" 
                             disabled={processing}
                         >
-                            {processing ? 'Signing in...' : 'Sign in'}
+                            {processing ? 'Creating Account...' : 'Create Account'}
                         </PrimaryButton>
                     </div>
                 </form>

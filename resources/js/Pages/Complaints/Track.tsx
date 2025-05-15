@@ -3,7 +3,11 @@ import { useForm } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import MainLayout from '@/Layouts/MainLayout';
 
-export default function Track() {
+interface Props {
+    // Add any props if needed
+}
+
+const Track: React.FC<Props> = () => {
     const { data, setData, post, processing, errors } = useForm({
         complaint_id: '',
     });
@@ -46,4 +50,6 @@ export default function Track() {
             </div>
         </MainLayout>
     );
-} 
+};
+
+export default Track; 

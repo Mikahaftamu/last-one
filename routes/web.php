@@ -8,24 +8,49 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-// Set complaints create as homepage
-Route::get('/', [ComplaintController::class, 'create'])->name('home');
+// Auth routes must be loaded first
+require __DIR__.'/auth.php';
+
+// Public routes
+Route::get('/', function () {
+    return Inertia::render('Welcome');
+})->name('home');
 
 // Complaint routes (no auth required)
 Route::get('/complaints/create', [ComplaintController::class, 'create'])->name('complaints.create');
 Route::post('/complaints', [ComplaintController::class, 'store'])->name('complaints.store');
-Route::get('/complaints/{complaintId}', [ComplaintController::class, 'show'])->name('complaints.show');
 Route::get('/complaints/track', [ComplaintController::class, 'track'])->name('complaints.track');
 Route::post('/complaints/track', [ComplaintController::class, 'trackComplaint'])->name('complaints.track.post');
+Route::get('/complaints/{complaintId}', [ComplaintController::class, 'show'])->name('complaints.show');
 
 // Admin routes
-Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/admin', [AdminController::class, 'dashboard'])->name('admin.dashboard');
-    Route::get('/admin/users/create', [AdminController::class, 'createUser'])->name('admin.users.create');
-    Route::post('/admin/users', [AdminController::class, 'storeUser'])->name('admin.users.store');
-    Route::get('/admin/users/{user}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
-    Route::put('/admin/users/{user}', [AdminController::class, 'updateUser'])->name('admin.users.update');
-    Route::delete('/admin/users/{user}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/users/create', [AdminController::class, 'createUser'])->name('users.create');
+    Route::post('/users', [AdminController::class, 'storeUser'])->name('users.store');
+    Route::get('/users/{user}/edit', [AdminController::class, 'editUser'])->name('users.edit');
+    Route::put('/users/{user}', [AdminController::class, 'updateUser'])->name('users.update');
+    Route::delete('/users/{user}', [AdminController::class, 'deleteUser'])->name('users.delete');
+});
+
+// VP routes
+Route::middleware(['auth', 'role:vp'])->prefix('vp')->name('vp.')->group(function () {
+    Route::get('/', [ComplaintController::class, 'vpDashboard'])->name('dashboard');
+});
+
+// Director routes
+Route::middleware(['auth', 'role:director'])->prefix('director')->name('director.')->group(function () {
+    Route::get('/', [ComplaintController::class, 'directorDashboard'])->name('dashboard');
+});
+
+// Coordinator routes
+Route::middleware(['auth', 'role:coordinator'])->prefix('coordinator')->name('coordinator.')->group(function () {
+    Route::get('/', [ComplaintController::class, 'coordinatorDashboard'])->name('dashboard');
+});
+
+// Worker routes
+Route::middleware(['auth', 'role:worker'])->prefix('worker')->name('worker.')->group(function () {
+    Route::get('/', [ComplaintController::class, 'workerDashboard'])->name('dashboard');
 });
 
 // Complaint Status Routes
@@ -40,5 +65,3 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
-
-require __DIR__.'/auth.php';
