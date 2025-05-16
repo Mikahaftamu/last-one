@@ -37,7 +37,31 @@ export default function Edit({ user, campuses, complaintTypes }: PageProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(route('admin.users.update', user.id));
+        
+        // Pre-process campus_id and complaint_type_id to ensure they are sent correctly
+        if (data.campus_id) {
+            console.log(`Campus ID before submission: ${data.campus_id} (${typeof data.campus_id})`);
+        }
+        
+        // Convert campus_id and complaint_type_id to numbers directly in the form data
+        setData('campus_id', data.campus_id ? data.campus_id : '');
+        setData('complaint_type_id', data.complaint_type_id ? data.complaint_type_id : '');
+        
+        console.log("Submitting update with data:", {
+            name: data.name,
+            email: data.email,
+            role: data.role,
+            campus_id: data.campus_id ? parseInt(data.campus_id) : null,
+            complaint_type_id: data.complaint_type_id ? parseInt(data.complaint_type_id) : null
+        });
+        
+        // Force a refresh after update to ensure everything is displayed correctly
+        put(route('admin.users.update', user.id), {
+            onSuccess: () => {
+                // Force reload to see the updated user
+                window.location.href = route('admin.dashboard');
+            }
+        });
     };
 
     return (
@@ -175,7 +199,7 @@ export default function Edit({ user, campuses, complaintTypes }: PageProps) {
                                 <div className="flex justify-end mt-6">
                                     <button
                                         type="submit"
-                                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                                        className="px-4 py-2 bg-indigo-600 text-black rounded-md hover:bg-indigo-700 transition-colors"
                                         disabled={processing}
                                     >
                                         {processing ? 'Updating...' : 'Update User'}

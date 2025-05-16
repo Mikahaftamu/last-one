@@ -117,6 +117,13 @@ class AdminController extends Controller
         ]);
 
         try {
+            // Log the incoming data to debug
+            Log::info('Updating user - received data:', [
+                'user_id' => $user->id,
+                'request_data' => $request->all(),
+                'validated_data' => $validated
+            ]);
+
             $user->update([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
@@ -124,17 +131,32 @@ class AdminController extends Controller
 
             $role = \App\Models\Role::where('role', $validated['role'])->firstOrFail();
             $userRole = $user->roles()->first();
+            
+            // Make sure campus_id is properly set
+            $campus_id = isset($validated['campus_id']) ? (int)$validated['campus_id'] : null;
+            $complaint_type_id = isset($validated['complaint_type_id']) ? (int)$validated['complaint_type_id'] : null;
+            
             if ($userRole) {
+                Log::info('Updating user role pivot', [
+                    'user_id' => $user->id,
+                    'role_id' => $role->id,
+                    'campus_id' => $campus_id,
+                    'complaint_type_id' => $complaint_type_id
+                ]);
+                
                 $userRole->pivot->update([
                     'role_id' => $role->id,
-                    'campus_id' => $validated['campus_id'] ?? null,
-                    'complaint_type_id' => $validated['complaint_type_id'] ?? null,
+                    'campus_id' => $campus_id,
+                    'complaint_type_id' => $complaint_type_id,
                 ]);
             }
 
-            Log::info('User updated successfully', [
-                'user_id' => $user->id,
-                'role' => $validated['role']
+            // Reload the user to verify the changes were saved
+            $updatedUser = User::with('roles')->find($user->id);
+            Log::info('User updated successfully - final state:', [
+                'user_id' => $updatedUser->id,
+                'user_campus_id' => $updatedUser->roles->first()->pivot->campus_id ?? null,
+                'user_complaint_type_id' => $updatedUser->roles->first()->pivot->complaint_type_id ?? null
             ]);
 
             return redirect()->route('admin.dashboard')
