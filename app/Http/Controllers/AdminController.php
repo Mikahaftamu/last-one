@@ -10,28 +10,46 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Log;
 
 class AdminController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(['auth', 'role:admin']);
-    }
-
     public function dashboard()
     {
-        return Inertia::render('Admin/Dashboard', [
-            'users' => User::with('roles')->get(),
-            'campuses' => Campus::all(),
-            'complaintTypes' => ComplaintType::all(),
-        ]);
+        try {
+            $users = User::with('roles')->get();
+            $campuses = Campus::all();
+            $complaintTypes = ComplaintType::all();
+
+            Log::info('Admin dashboard accessed', [
+                'user_count' => $users->count(),
+                'campus_count' => $campuses->count(),
+                'complaint_type_count' => $complaintTypes->count()
+            ]);
+
+            return Inertia::render('Admin/Dashboard', [
+                'users' => $users,
+                'campuses' => $campuses,
+                'complaintTypes' => $complaintTypes,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error accessing admin dashboard: ' . $e->getMessage(), [
+                'exception' => $e
+            ]);
+            return redirect()->route('login')->withErrors([
+                'email' => 'An error occurred while accessing the dashboard. Please try again.',
+            ]);
+        }
     }
 
-    public function createUser()
+    public function createUser(Request $request)
     {
+        $defaultRole = $request->query('role', '');
+        
         return Inertia::render('Admin/Users/Create', [
             'campuses' => Campus::all(),
             'complaintTypes' => ComplaintType::all(),
+            'defaultRole' => $defaultRole,
         ]);
     }
 
@@ -46,21 +64,37 @@ class AdminController extends Controller
             'complaint_type_id' => 'required_if:role,coordinator|exists:complaint_types,id',
         ]);
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-        ]);
+        try {
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+            ]);
 
-        UserRole::create([
-            'user_id' => $user->id,
-            'role' => $validated['role'],
-            'campus_id' => $validated['campus_id'] ?? null,
-            'complaint_type_id' => $validated['complaint_type_id'] ?? null,
-        ]);
+            $role = \App\Models\Role::where('role', $validated['role'])->firstOrFail();
+            \App\Models\UserRole::create([
+                'user_id' => $user->id,
+                'role_id' => $role->id,
+                'campus_id' => $validated['campus_id'] ?? null,
+                'complaint_type_id' => $validated['complaint_type_id'] ?? null,
+            ]);
 
-        return redirect()->route('admin.dashboard')
-            ->with('message', 'User created successfully');
+            Log::info('User created successfully', [
+                'user_id' => $user->id,
+                'role' => $validated['role']
+            ]);
+
+            return redirect()->route('admin.dashboard')
+                ->with('message', 'User created successfully');
+        } catch (\Exception $e) {
+            Log::error('Error creating user: ' . $e->getMessage(), [
+                'exception' => $e,
+                'data' => $validated
+            ]);
+            return back()->withErrors([
+                'email' => 'An error occurred while creating the user. Please try again.',
+            ]);
+        }
     }
 
     public function editUser(User $user)
@@ -82,25 +116,86 @@ class AdminController extends Controller
             'complaint_type_id' => 'required_if:role,coordinator|exists:complaint_types,id',
         ]);
 
-        $user->update([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-        ]);
+        try {
+            $user->update([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+            ]);
 
-        $user->roles()->update([
-            'role' => $validated['role'],
-            'campus_id' => $validated['campus_id'] ?? null,
-            'complaint_type_id' => $validated['complaint_type_id'] ?? null,
-        ]);
+            $role = \App\Models\Role::where('role', $validated['role'])->firstOrFail();
+            $userRole = $user->roles()->first();
+            if ($userRole) {
+                $userRole->pivot->update([
+                    'role_id' => $role->id,
+                    'campus_id' => $validated['campus_id'] ?? null,
+                    'complaint_type_id' => $validated['complaint_type_id'] ?? null,
+                ]);
+            }
 
-        return redirect()->route('admin.dashboard')
-            ->with('message', 'User updated successfully');
+            Log::info('User updated successfully', [
+                'user_id' => $user->id,
+                'role' => $validated['role']
+            ]);
+
+            return redirect()->route('admin.dashboard')
+                ->with('message', 'User updated successfully');
+        } catch (\Exception $e) {
+            Log::error('Error updating user: ' . $e->getMessage(), [
+                'exception' => $e,
+                'user_id' => $user->id,
+                'data' => $validated
+            ]);
+            return back()->withErrors([
+                'email' => 'An error occurred while updating the user. Please try again.',
+            ]);
+        }
     }
 
     public function deleteUser(User $user)
     {
-        $user->delete();
-        return redirect()->route('admin.dashboard')
-            ->with('message', 'User deleted successfully');
+        try {
+            $user->delete();
+            Log::info('User deleted successfully', [
+                'user_id' => $user->id
+            ]);
+            return redirect()->route('admin.dashboard')
+                ->with('message', 'User deleted successfully');
+        } catch (\Exception $e) {
+            Log::error('Error deleting user: ' . $e->getMessage(), [
+                'exception' => $e,
+                'user_id' => $user->id
+            ]);
+            return back()->withErrors([
+                'email' => 'An error occurred while deleting the user. Please try again.',
+            ]);
+        }
+    }
+    
+    public function resetPassword(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'password' => ['required', Password::defaults()],
+        ]);
+
+        try {
+            $user->update([
+                'password' => Hash::make($validated['password']),
+            ]);
+
+            Log::info('User password reset successfully', [
+                'user_id' => $user->id
+            ]);
+
+            return redirect()->back()
+                ->with('message', 'Password reset successfully');
+        } catch (\Exception $e) {
+            Log::error('Error resetting user password: ' . $e->getMessage(), [
+                'exception' => $e,
+                'user_id' => $user->id
+            ]);
+            return back()->withErrors([
+                'password' => 'An error occurred while resetting the password. Please try again.',
+            ]);
+        }
     }
 } 

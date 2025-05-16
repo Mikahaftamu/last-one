@@ -37,7 +37,11 @@ class HandleInertiaRequests extends Middleware
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
                     'roles' => $request->user()->roles->map(function($role) {
-                        return $role->role;
+                        return [
+                            'id' => $role->id,
+                            'role' => $role->role,
+                            'description' => $role->description
+                        ];
                     }),
                 ] : null,
             ],

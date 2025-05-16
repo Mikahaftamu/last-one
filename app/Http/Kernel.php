@@ -45,6 +45,31 @@ class Kernel extends HttpKernel
             \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
+
+        'admin' => [
+            'auth',
+            \App\Http\Middleware\CheckUserRole::class.':admin',
+        ],
+
+        'vp' => [
+            'auth',
+            \App\Http\Middleware\CheckUserRole::class.':vp',
+        ],
+
+        'director' => [
+            'auth',
+            \App\Http\Middleware\CheckUserRole::class.':director',
+        ],
+
+        'coordinator' => [
+            'auth',
+            \App\Http\Middleware\CheckUserRole::class.':coordinator',
+        ],
+
+        'worker' => [
+            'auth',
+            \App\Http\Middleware\CheckUserRole::class.':worker',
+        ],
     ];
 
     /**
@@ -66,6 +91,6 @@ class Kernel extends HttpKernel
         'signed' => \App\Http\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-        'role' => \App\Http\Middleware\CheckRole::class,
+        'role' => \App\Http\Middleware\CheckUserRole::class,
     ];
 } 

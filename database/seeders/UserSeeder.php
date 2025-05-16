@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\UserRole;
+use App\Models\Role;
 use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
@@ -19,9 +20,12 @@ class UserSeeder extends Seeder
             'password' => Hash::make('password'),
         ]);
 
-        UserRole::updateOrCreate([
-            'user_id' => $admin->id,
-            'role' => 'admin',
-        ]);
+        $adminRole = Role::where('role', 'admin')->first();
+        if ($adminRole) {
+            UserRole::updateOrCreate([
+                'user_id' => $admin->id,
+                'role_id' => $adminRole->id,
+            ]);
+        }
     }
 } 

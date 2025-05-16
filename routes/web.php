@@ -24,32 +24,33 @@ Route::post('/complaints/track', [ComplaintController::class, 'trackComplaint'])
 Route::get('/complaints/{complaintId}', [ComplaintController::class, 'show'])->name('complaints.show');
 
 // Admin routes
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\CheckUserRole::class.':admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/users/create', [AdminController::class, 'createUser'])->name('users.create');
     Route::post('/users', [AdminController::class, 'storeUser'])->name('users.store');
     Route::get('/users/{user}/edit', [AdminController::class, 'editUser'])->name('users.edit');
     Route::put('/users/{user}', [AdminController::class, 'updateUser'])->name('users.update');
     Route::delete('/users/{user}', [AdminController::class, 'deleteUser'])->name('users.delete');
+    Route::put('/users/{user}/reset-password', [AdminController::class, 'resetPassword'])->name('users.reset-password');
 });
 
 // VP routes
-Route::middleware(['auth', 'role:vp'])->prefix('vp')->name('vp.')->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\CheckUserRole::class.':vp'])->prefix('vp')->name('vp.')->group(function () {
     Route::get('/', [ComplaintController::class, 'vpDashboard'])->name('dashboard');
 });
 
 // Director routes
-Route::middleware(['auth', 'role:director'])->prefix('director')->name('director.')->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\CheckUserRole::class.':director'])->prefix('director')->name('director.')->group(function () {
     Route::get('/', [ComplaintController::class, 'directorDashboard'])->name('dashboard');
 });
 
 // Coordinator routes
-Route::middleware(['auth', 'role:coordinator'])->prefix('coordinator')->name('coordinator.')->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\CheckUserRole::class.':coordinator'])->prefix('coordinator')->name('coordinator.')->group(function () {
     Route::get('/', [ComplaintController::class, 'coordinatorDashboard'])->name('dashboard');
 });
 
 // Worker routes
-Route::middleware(['auth', 'role:worker'])->prefix('worker')->name('worker.')->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\CheckUserRole::class.':worker'])->prefix('worker')->name('worker.')->group(function () {
     Route::get('/', [ComplaintController::class, 'workerDashboard'])->name('dashboard');
 });
 

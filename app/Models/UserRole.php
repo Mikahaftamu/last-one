@@ -9,7 +9,7 @@ class UserRole extends Model
 {
     protected $fillable = [
         'user_id',
-        'role',
+        'role_id',
         'campus_id',
         'complaint_type_id',
     ];

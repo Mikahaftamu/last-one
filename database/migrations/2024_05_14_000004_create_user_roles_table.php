@@ -11,15 +11,7 @@ return new class extends Migration
         Schema::create('user_roles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->enum('role', [
-                'admin',
-                'vp',
-                'director',
-                'cleaning_coordinator',
-                'general_coordinator',
-                'coordinator',
-                'worker'
-            ]);
+            $table->foreignId('role_id')->constrained()->onDelete('cascade');
             $table->foreignId('campus_id')->nullable()->constrained()->onDelete('cascade');
             $table->foreignId('complaint_type_id')->nullable()->constrained()->onDelete('cascade');
             $table->timestamps();

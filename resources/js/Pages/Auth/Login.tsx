@@ -4,6 +4,8 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 
+declare function route(name: string, params?: any): string;
+
 interface Props {
     canResetPassword: boolean;
     status?: string;
@@ -18,8 +20,11 @@ export default function Login({ canResetPassword, status }: Props) {
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/login', {
-            onFinish: () => reset('password'),
+        post(route('login'), {
+            onSuccess: () => {
+                reset('password');
+            },
+            preserveScroll: true,
         });
     };
 

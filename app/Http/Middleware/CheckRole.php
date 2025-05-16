@@ -13,9 +13,12 @@ class CheckRole
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @param  string  $role The required role name
+     * @return mixed
      */
-    public function handle(Request $request, Closure $next, string $role): Response
+    public function handle(Request $request, Closure $next, $role)
     {
         // Check if user is authenticated
         if (!Auth::check()) {
@@ -28,7 +31,8 @@ class CheckRole
         }
 
         // Get user's role
-        $userRole = Auth::user()->roles->first();
+        $user = Auth::user();
+        $userRole = $user->roles->first();
         
         // Check if user has a role
         if (!$userRole) {

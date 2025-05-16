@@ -16,36 +16,46 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Providers\RouteServiceProvider;
 
 class AuthenticatedSessionController extends Controller
 {
     /**
      * Display the login view.
+     * 
+     * @return \Inertia\Response|\Illuminate\Http\RedirectResponse
      */
-    public function create(): Response
+    public function create()
     {
-        // Only show login page if user is not authenticated
+        // If user is already authenticated, redirect to their dashboard
         if (Auth::check()) {
             $user = Auth::user();
-            if ($user->roles->first()) {
-                $role = $user->roles->first()->role;
-                return match($role) {
-                    'admin' => Inertia::location(route('admin.dashboard')),
-                    'vp' => Inertia::location(route('vp.dashboard')),
-                    'director' => Inertia::location(route('director.dashboard')),
-                    'coordinator' => Inertia::location(route('coordinator.dashboard')),
-                    'worker' => Inertia::location(route('worker.dashboard')),
-                    default => Inertia::location(route('dashboard')),
-                };
+            
+            // Check if user has a role
+            if ($user->roles->isEmpty()) {
+                Auth::logout();
+                return redirect()->route('login')->withErrors([
+                    'email' => 'Your account is not properly configured. Please contact support.',
+                ]);
             }
+            
+            // Get the user's primary role
+            $role = $user->roles->first()->role;
+            
+            // Redirect based on role
+            return match($role) {
+                'admin' => redirect()->route('admin.dashboard'),
+                'vp' => redirect()->route('vp.dashboard'),
+                'director' => redirect()->route('director.dashboard'),
+                'coordinator' => redirect()->route('coordinator.dashboard'),
+                'worker' => redirect()->route('worker.dashboard'),
+                default => redirect(RouteServiceProvider::HOME),
+            };
         }
 
-        // Always render the login page for non-authenticated users
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
-            'errors' => session('errors'),
-            'intended' => session('url.intended'),
         ]);
     }
 
@@ -54,77 +64,35 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        try {
-            // Check for too many login attempts
-            if ($this->hasTooManyLoginAttempts($request)) {
-                $this->fireLockoutEvent($request);
-                return $this->sendLockoutResponse($request);
-            }
+        $request->authenticate();
 
-            // Attempt to authenticate the user
-            $request->authenticate();
+        $request->session()->regenerate();
 
-            // Regenerate the session
-            $request->session()->regenerate();
-
-            // Get the authenticated user
-            $user = Auth::user();
-
-            // Check if user has a role
-            if (!$user->roles->first()) {
-                Auth::logout();
-                Log::warning('Login attempt failed: User has no role assigned', ['user_id' => $user->id]);
-                throw ValidationException::withMessages([
-                    'email' => 'Your account is not properly configured. Please contact support.',
-                ]);
-            }
-
-            // Get user's role
-            $role = $user->roles->first()->role;
-
-            // Log successful login
-            Log::info('User logged in successfully', [
-                'user_id' => $user->id,
-                'role' => $role,
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent()
-            ]);
-
-            // Clear login attempts
-            $this->clearLoginAttempts($request);
-
-            // Redirect based on role
-            return match($role) {
-                'admin' => redirect()->intended(route('admin.dashboard')),
-                'vp' => redirect()->intended(route('vp.dashboard')),
-                'director' => redirect()->intended(route('director.dashboard')),
-                'coordinator' => redirect()->intended(route('coordinator.dashboard')),
-                'worker' => redirect()->intended(route('worker.dashboard')),
-                default => redirect()->intended(route('dashboard')),
-            };
-        } catch (ValidationException $e) {
-            // Increment login attempts
-            $this->incrementLoginAttempts($request);
-
-            // Log failed login attempt
-            Log::warning('Login attempt failed: Invalid credentials', [
-                'email' => $request->email,
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent()
-            ]);
-            throw $e;
-        } catch (\Exception $e) {
-            // Log unexpected errors
-            Log::error('Login error: ' . $e->getMessage(), [
-                'email' => $request->email,
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-                'exception' => $e
-            ]);
-            return back()->withErrors([
-                'email' => 'An unexpected error occurred. Please try again later.',
+        $user = Auth::user();
+        
+        // Check if user has a role
+        if ($user->roles->isEmpty()) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            
+            return redirect()->route('login')->withErrors([
+                'email' => 'Your account is not properly configured. Please contact support.',
             ]);
         }
+        
+        // Get the user's primary role
+        $role = $user->roles->first()->role;
+        
+        // Redirect based on role
+        return match($role) {
+            'admin' => redirect()->intended(route('admin.dashboard')),
+            'vp' => redirect()->intended(route('vp.dashboard')),
+            'director' => redirect()->intended(route('director.dashboard')),
+            'coordinator' => redirect()->intended(route('coordinator.dashboard')),
+            'worker' => redirect()->intended(route('worker.dashboard')),
+            default => redirect()->intended(RouteServiceProvider::HOME),
+        };
     }
 
     /**
@@ -132,46 +100,13 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        try {
-            // Get user info before logout for logging
-            $user = Auth::user();
-            $userId = $user ? $user->id : null;
-            $role = $user && $user->roles->first() ? $user->roles->first()->role : null;
+        Auth::guard('web')->logout();
 
-            // Logout the user
-            Auth::guard('web')->logout();
+        $request->session()->invalidate();
 
-            // Invalidate the session
-            $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
-            // Regenerate the CSRF token
-            $request->session()->regenerateToken();
-
-            // Log successful logout
-            if ($userId) {
-                Log::info('User logged out successfully', [
-                    'user_id' => $userId,
-                    'role' => $role,
-                    'ip' => $request->ip(),
-                    'user_agent' => $request->userAgent()
-                ]);
-            }
-
-            // Redirect to login page with success message
-            return redirect()->route('login')->with('status', 'You have been successfully logged out.');
-        } catch (\Exception $e) {
-            // Log logout error
-            Log::error('Logout error: ' . $e->getMessage(), [
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-                'exception' => $e
-            ]);
-            
-            // Still try to redirect to login page
-            return redirect()->route('login')->withErrors([
-                'error' => 'An error occurred during logout. Please try again.',
-            ]);
-        }
+        return redirect('/');
     }
 
     /**
