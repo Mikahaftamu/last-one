@@ -17,7 +17,11 @@ class AdminController extends Controller
     public function dashboard()
     {
         try {
-            $users = User::with('roles')->get();
+            // Load users with their roles and explicitly include the pivot data
+            $users = User::with(['roles' => function($query) {
+                $query->withPivot('campus_id', 'complaint_type_id');
+            }])->get();
+            
             $campuses = Campus::all();
             $complaintTypes = ComplaintType::all();
 
@@ -65,6 +69,12 @@ class AdminController extends Controller
         ]);
 
         try {
+            // Log all incoming data to help debug
+            Log::info('Creating user - received data:', [
+                'request_data' => $request->all(),
+                'validated_data' => $validated
+            ]);
+            
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
@@ -72,16 +82,25 @@ class AdminController extends Controller
             ]);
 
             $role = \App\Models\Role::where('role', $validated['role'])->firstOrFail();
+            
+            // Make sure campus_id is properly set
+            $campus_id = isset($validated['campus_id']) ? (int)$validated['campus_id'] : null;
+            $complaint_type_id = isset($validated['complaint_type_id']) ? (int)$validated['complaint_type_id'] : null;
+            
             \App\Models\UserRole::create([
                 'user_id' => $user->id,
                 'role_id' => $role->id,
-                'campus_id' => $validated['campus_id'] ?? null,
-                'complaint_type_id' => $validated['complaint_type_id'] ?? null,
+                'campus_id' => $campus_id,
+                'complaint_type_id' => $complaint_type_id,
             ]);
 
-            Log::info('User created successfully', [
-                'user_id' => $user->id,
-                'role' => $validated['role']
+            // Reload the user to verify the changes were saved
+            $createdUser = User::with('roles')->find($user->id);
+            Log::info('User created successfully - final state:', [
+                'user_id' => $createdUser->id,
+                'role' => $validated['role'],
+                'user_campus_id' => $createdUser->roles->first()->pivot->campus_id ?? null,
+                'user_complaint_type_id' => $createdUser->roles->first()->pivot->complaint_type_id ?? null
             ]);
 
             return redirect()->route('admin.dashboard')

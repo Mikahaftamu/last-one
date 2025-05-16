@@ -10,6 +10,12 @@ export interface User {
         role: string;
         campus_id?: number;
         complaint_type_id?: number;
+        pivot?: {
+            user_id: number;
+            role_id: number;
+            campus_id: number | null;
+            complaint_type_id: number | null;
+        };
     }>;
 }
 

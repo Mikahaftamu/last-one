@@ -36,7 +36,9 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
     const getCoordinatorsByCampus = (campusId: number) => {
         return users.filter(user => 
             user.roles?.some(role => 
-                role.role === 'coordinator' && role.campus_id === campusId
+                role.role === 'coordinator' && 
+                // Check both standard and pivot campus_id
+                (role.pivot?.campus_id === campusId || role.campus_id === campusId)
             )
         );
     };
@@ -123,9 +125,12 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
     };
 
     const getCampusName = (campusId: number | null | undefined) => {
+        console.log("Getting campus name for ID:", campusId, typeof campusId);
         if (!campusId) return 'N/A';
         const campus = campuses.find(c => c.id === campusId);
-        return campus ? campus.name : 'Unknown';
+        const result = campus ? campus.name : 'Unknown';
+        console.log("Found campus:", result);
+        return result;
     };
 
     const getComplaintTypeName = (typeId: number | null | undefined) => {
@@ -452,8 +457,8 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                                                     <div className="font-medium">{coordinator.name}</div>
                                                                     <div className="text-sm text-gray-500">{coordinator.email}</div>
                                                                     <div className="text-xs text-gray-500 mt-1">
-                                                                        {coordinator.roles?.[0]?.complaint_type_id && 
-                                                                            `Type: ${getComplaintTypeName(coordinator.roles[0].complaint_type_id)}`
+                                                                        {coordinator.roles?.[0]?.pivot?.complaint_type_id && 
+                                                                            `Type: ${getComplaintTypeName(coordinator.roles[0].pivot.complaint_type_id)}`
                                                                         }
                                                                     </div>
                                                                 </div>
@@ -689,7 +694,9 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {getCampusName(user.roles?.[0]?.campus_id)}
+                                                        {user.roles && user.roles[0] && (
+                                                            getCampusName(user.roles[0].pivot?.campus_id)
+                                                        )}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                         <div className="flex space-x-3">
