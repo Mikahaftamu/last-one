@@ -43,9 +43,11 @@ export default function Edit({ user, campuses, complaintTypes }: PageProps) {
             console.log(`Campus ID before submission: ${data.campus_id} (${typeof data.campus_id})`);
         }
         
-        // Convert campus_id and complaint_type_id to numbers directly in the form data
-        setData('campus_id', data.campus_id ? data.campus_id : '');
-        setData('complaint_type_id', data.complaint_type_id ? data.complaint_type_id : '');
+        // For VP and director roles, ensure we don't send campus_id
+        if (data.role === 'vp' || data.role === 'director') {
+            setData('campus_id', '');
+            setData('complaint_type_id', '');
+        }
         
         console.log("Submitting update with data:", {
             name: data.name,
@@ -58,6 +60,8 @@ export default function Edit({ user, campuses, complaintTypes }: PageProps) {
         // Force a refresh after update to ensure everything is displayed correctly
         put(route('admin.users.update', user.id), {
             onSuccess: () => {
+                // Remember to go back to the user management section
+                localStorage.setItem('dashboard_active_section', 'users');
                 // Force reload to see the updated user
                 window.location.href = route('admin.dashboard');
             }

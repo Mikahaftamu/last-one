@@ -13,13 +13,19 @@ interface PageProps {
 }
 
 export default function Dashboard({ users, campuses, complaintTypes, auth }: PageProps) {
-    const [activeTab, setActiveTab] = useState('all');
+    const [activeTab, setActiveTab] = useState(() => {
+        // Try to restore active tab from localStorage
+        return localStorage.getItem('dashboard_active_tab') || 'all';
+    });
     const [selectedCampus, setSelectedCampus] = useState<number | null>(null);
     const [showResetModal, setShowResetModal] = useState(false);
     const [resetUserId, setResetUserId] = useState<number | null>(null);
     const [newPassword, setNewPassword] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
-    const [activeSection, setActiveSection] = useState('dashboard');
+    const [activeSection, setActiveSection] = useState(() => {
+        // Try to restore active section from localStorage
+        return localStorage.getItem('dashboard_active_section') || 'dashboard';
+    });
     const [showCoordinatorModal, setShowCoordinatorModal] = useState(false);
     const [selectedComplaintType, setSelectedComplaintType] = useState<number | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,6 +52,11 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
     const handleDelete = (userId: number) => {
         if (confirm('Are you sure you want to delete this user?')) {
             console.log("Deleting user:", userId);
+            
+            // Remember current section and tab
+            localStorage.setItem('dashboard_active_section', activeSection);
+            localStorage.setItem('dashboard_active_tab', activeTab);
+            
             router.delete(route('admin.users.delete', userId), {
                 onSuccess: () => {
                     // Force refresh to see the updated list
@@ -72,6 +83,10 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
         if (!newPassword || !resetUserId) return;
         
         setIsSubmitting(true);
+        
+        // Remember current section and tab
+        localStorage.setItem('dashboard_active_section', activeSection);
+        localStorage.setItem('dashboard_active_tab', activeTab);
         
         router.put(route('admin.users.reset-password', resetUserId), {
             password: newPassword
@@ -107,9 +122,18 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
         
         // Filter by campus
         if (selectedCampus) {
-            filtered = filtered.filter(user => 
-                user.roles && user.roles.length > 0 && user.roles[0].campus_id === selectedCampus
-            );
+            filtered = filtered.filter(user => {
+                if (!user.roles || user.roles.length === 0) return false;
+                
+                const role = user.roles[0];
+                // Check both regular and pivot campus_id
+                const roleCampusId = role.campus_id;
+                const pivotCampusId = role.pivot?.campus_id;
+                
+                console.log("Filtering user:", user.name, "Campus ID:", roleCampusId, "Pivot Campus ID:", pivotCampusId, "Selected Campus:", selectedCampus);
+                
+                return roleCampusId === selectedCampus || pivotCampusId === selectedCampus;
+            });
         }
 
         // Filter by search term
@@ -176,6 +200,9 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
         };
         
         console.log("Submitting coordinator with data:", submissionData);
+        
+        // Remember we want to go back to the User Management section
+        localStorage.setItem('dashboard_active_section', 'users');
         
         router.post(route('admin.users.store'), submissionData, {
             onSuccess: () => {
@@ -262,7 +289,10 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                             <div className="border-b border-gray-200 mb-6">
                                 <nav className="-mb-px flex space-x-6">
                                     <button 
-                                        onClick={() => setActiveSection('dashboard')}
+                                        onClick={() => {
+                                            setActiveSection('dashboard');
+                                            localStorage.setItem('dashboard_active_section', 'dashboard');
+                                        }}
                                         className={`pb-4 px-1 ${activeSection === 'dashboard' 
                                             ? 'border-b-2 border-blue-500 text-blue-600 font-medium'
                                             : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
@@ -270,7 +300,10 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                         Dashboard Overview
                                     </button>
                                     <button 
-                                        onClick={() => setActiveSection('coordinators')}
+                                        onClick={() => {
+                                            setActiveSection('coordinators');
+                                            localStorage.setItem('dashboard_active_section', 'coordinators');
+                                        }}
                                         className={`pb-4 px-1 ${activeSection === 'coordinators' 
                                             ? 'border-b-2 border-blue-500 text-blue-600 font-medium'
                                             : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
@@ -278,7 +311,10 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                         Campus Coordinators
                                     </button>
                                     <button 
-                                        onClick={() => setActiveSection('users')}
+                                        onClick={() => {
+                                            setActiveSection('users');
+                                            localStorage.setItem('dashboard_active_section', 'users');
+                                        }}
                                         className={`pb-4 px-1 ${activeSection === 'users' 
                                             ? 'border-b-2 border-blue-500 text-blue-600 font-medium'
                                             : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
@@ -518,7 +554,11 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                         <ul className="flex flex-wrap -mb-px text-sm font-medium text-center">
                                             <li className="mr-2">
                                                 <button
-                                                    onClick={() => {setActiveTab('all'); setSelectedCampus(null);}}
+                                                    onClick={() => {
+                                                        setActiveTab('all'); 
+                                                        setSelectedCampus(null);
+                                                        localStorage.setItem('dashboard_active_tab', 'all');
+                                                    }}
                                                     className={`inline-block p-4 rounded-t-lg ${activeTab === 'all' 
                                                         ? 'text-blue-600 border-b-2 border-blue-600' 
                                                         : 'text-gray-500 hover:text-gray-600 hover:border-gray-300 border-b-2 border-transparent'}`}
@@ -528,7 +568,10 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                             </li>
                                             <li className="mr-2">
                                                 <button
-                                                    onClick={() => setActiveTab('coordinator')}
+                                                    onClick={() => {
+                                                        setActiveTab('coordinator');
+                                                        localStorage.setItem('dashboard_active_tab', 'coordinator');
+                                                    }}
                                                     className={`inline-block p-4 rounded-t-lg ${activeTab === 'coordinator' 
                                                         ? 'text-blue-600 border-b-2 border-blue-600' 
                                                         : 'text-gray-500 hover:text-gray-600 hover:border-gray-300 border-b-2 border-transparent'}`}
@@ -538,7 +581,10 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                             </li>
                                             <li className="mr-2">
                                                 <button
-                                                    onClick={() => setActiveTab('worker')}
+                                                    onClick={() => {
+                                                        setActiveTab('worker');
+                                                        localStorage.setItem('dashboard_active_tab', 'worker');
+                                                    }}
                                                     className={`inline-block p-4 rounded-t-lg ${activeTab === 'worker' 
                                                         ? 'text-blue-600 border-b-2 border-blue-600' 
                                                         : 'text-gray-500 hover:text-gray-600 hover:border-gray-300 border-b-2 border-transparent'}`}
@@ -548,7 +594,11 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                             </li>
                                             <li className="mr-2">
                                                 <button
-                                                    onClick={() => {setActiveTab('vp'); setSelectedCampus(null);}}
+                                                    onClick={() => {
+                                                        setActiveTab('vp'); 
+                                                        setSelectedCampus(null);
+                                                        localStorage.setItem('dashboard_active_tab', 'vp');
+                                                    }}
                                                     className={`inline-block p-4 rounded-t-lg ${activeTab === 'vp' 
                                                         ? 'text-blue-600 border-b-2 border-blue-600' 
                                                         : 'text-gray-500 hover:text-gray-600 hover:border-gray-300 border-b-2 border-transparent'}`}
@@ -558,7 +608,11 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                             </li>
                                             <li>
                                                 <button
-                                                    onClick={() => {setActiveTab('director'); setSelectedCampus(null);}}
+                                                    onClick={() => {
+                                                        setActiveTab('director'); 
+                                                        setSelectedCampus(null);
+                                                        localStorage.setItem('dashboard_active_tab', 'director');
+                                                    }}
                                                     className={`inline-block p-4 rounded-t-lg ${activeTab === 'director' 
                                                         ? 'text-blue-600 border-b-2 border-blue-600' 
                                                         : 'text-gray-500 hover:text-gray-600 hover:border-gray-300 border-b-2 border-transparent'}`}
@@ -593,7 +647,14 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                                     <select 
                                                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
                                                         value={selectedCampus || ''}
-                                                        onChange={(e) => setSelectedCampus(e.target.value ? Number(e.target.value) : null)}
+                                                        onChange={(e) => {
+                                                            const newCampusId = e.target.value ? Number(e.target.value) : null;
+                                                            console.log("Selected campus filter:", newCampusId);
+                                                            if (newCampusId) {
+                                                                console.log("Campus name:", getCampusName(newCampusId));
+                                                            }
+                                                            setSelectedCampus(newCampusId);
+                                                        }}
                                                     >
                                                         <option value="">All Campuses</option>
                                                         {campuses.map((campus) => (

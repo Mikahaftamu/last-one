@@ -39,8 +39,25 @@ export default function Create({ campuses, complaintTypes, defaultRole }: PagePr
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Ensure campus_id and complaint_type_id are properly handled
+        const submissionData = {
+            ...data,
+            // Convert to actual numbers for the backend
+            campus_id: data.campus_id ? parseInt(data.campus_id) : null,
+            complaint_type_id: data.complaint_type_id ? parseInt(data.complaint_type_id) : null
+        };
+        
+        console.log("Submitting new user data:", submissionData);
+        
         post(route('admin.users.store'), {
-            onSuccess: () => reset('password', 'password_confirmation'),
+            onSuccess: () => {
+                reset('password', 'password_confirmation');
+                // Remember to go back to the user management section
+                localStorage.setItem('dashboard_active_section', 'users');
+                // Redirect back to the dashboard
+                window.location.href = route('admin.dashboard');
+            }
         });
     };
 
@@ -212,7 +229,7 @@ export default function Create({ campuses, complaintTypes, defaultRole }: PagePr
                                 <div className="flex justify-end mt-6">
                                     <button
                                         type="submit"
-                                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                                        className="px-4 py-2 bg-indigo-600 text-black rounded-md hover:bg-indigo-700 transition-colors"
                                         disabled={processing}
                                     >
                                         {processing ? 'Creating...' : 'Create User'}

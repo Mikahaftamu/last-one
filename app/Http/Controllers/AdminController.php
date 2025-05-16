@@ -59,13 +59,14 @@ class AdminController extends Controller
 
     public function storeUser(Request $request)
     {
+        // Make sure validation rules don't require campus_id for VP and director roles
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', Password::defaults()],
             'role' => 'required|in:coordinator,worker,vp,director',
-            'campus_id' => 'required_if:role,coordinator,worker|exists:campuses,id',
-            'complaint_type_id' => 'required_if:role,coordinator|exists:complaint_types,id',
+            'campus_id' => 'required_if:role,coordinator,worker|nullable|exists:campuses,id',
+            'complaint_type_id' => 'required_if:role,coordinator|nullable|exists:complaint_types,id',
         ]);
 
         try {
@@ -86,6 +87,12 @@ class AdminController extends Controller
             // Make sure campus_id is properly set
             $campus_id = isset($validated['campus_id']) ? (int)$validated['campus_id'] : null;
             $complaint_type_id = isset($validated['complaint_type_id']) ? (int)$validated['complaint_type_id'] : null;
+            
+            // For VP and director roles, ensure campus_id is null
+            if (in_array($validated['role'], ['vp', 'director'])) {
+                $campus_id = null;
+                $complaint_type_id = null;
+            }
             
             \App\Models\UserRole::create([
                 'user_id' => $user->id,
@@ -127,12 +134,13 @@ class AdminController extends Controller
 
     public function updateUser(Request $request, User $user)
     {
+        // Make campus_id and complaint_type_id optional for VP and director roles
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'role' => 'required|in:coordinator,worker,vp,director',
-            'campus_id' => 'required_if:role,coordinator,worker|exists:campuses,id',
-            'complaint_type_id' => 'required_if:role,coordinator|exists:complaint_types,id',
+            'campus_id' => 'required_if:role,coordinator,worker|nullable|exists:campuses,id',
+            'complaint_type_id' => 'required_if:role,coordinator|nullable|exists:complaint_types,id',
         ]);
 
         try {
@@ -155,6 +163,12 @@ class AdminController extends Controller
             $campus_id = isset($validated['campus_id']) ? (int)$validated['campus_id'] : null;
             $complaint_type_id = isset($validated['complaint_type_id']) ? (int)$validated['complaint_type_id'] : null;
             
+            // For VP and director roles, ensure campus_id is null
+            if (in_array($validated['role'], ['vp', 'director'])) {
+                $campus_id = null;
+                $complaint_type_id = null;
+            }
+            
             if ($userRole) {
                 Log::info('Updating user role pivot', [
                     'user_id' => $user->id,
@@ -174,6 +188,7 @@ class AdminController extends Controller
             $updatedUser = User::with('roles')->find($user->id);
             Log::info('User updated successfully - final state:', [
                 'user_id' => $updatedUser->id,
+                'user_role' => $updatedUser->roles->first()->role ?? null,
                 'user_campus_id' => $updatedUser->roles->first()->pivot->campus_id ?? null,
                 'user_complaint_type_id' => $updatedUser->roles->first()->pivot->complaint_type_id ?? null
             ]);
