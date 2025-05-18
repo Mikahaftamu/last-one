@@ -49,11 +49,18 @@ class AdminController extends Controller
     public function createUser(Request $request)
     {
         $defaultRole = $request->query('role', '');
+        $complaintTypeId = $request->query('complaint_type_id', null);
+        $campusId = $request->query('campus_id', null);
         
         return Inertia::render('Admin/Users/Create', [
             'campuses' => Campus::all(),
             'complaintTypes' => ComplaintType::all(),
             'defaultRole' => $defaultRole,
+            'complaint_type_id' => $complaintTypeId,
+            'campus_id' => $campusId,
+            'users' => User::with(['roles' => function($query) {
+                $query->withPivot('campus_id', 'complaint_type_id');
+            }])->get(),
         ]);
     }
 
@@ -66,8 +73,18 @@ class AdminController extends Controller
             'password' => ['required', Password::defaults()],
             'role' => 'required|in:coordinator,worker,vp,director',
             'campus_id' => 'required_if:role,coordinator,worker|nullable|exists:campuses,id',
-            'complaint_type_id' => 'required_if:role,coordinator|nullable|exists:complaint_types,id',
+            'complaint_type_id' => 'required_if:role,coordinator,worker|nullable|exists:complaint_types,id',
         ]);
+        
+        // Custom validation to prevent workers from being assigned to Cleaning or Other departments
+        if ($validated['role'] === 'worker' && isset($validated['complaint_type_id'])) {
+            $complaintType = ComplaintType::find($validated['complaint_type_id']);
+            if ($complaintType && in_array($complaintType->name, ['Cleaning', 'Other'])) {
+                return back()->withErrors([
+                    'complaint_type_id' => 'Workers cannot be assigned to Cleaning or Other departments.'
+                ])->withInput();
+            }
+        }
 
         try {
             // Log all incoming data to help debug
@@ -140,8 +157,18 @@ class AdminController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'role' => 'required|in:coordinator,worker,vp,director',
             'campus_id' => 'required_if:role,coordinator,worker|nullable|exists:campuses,id',
-            'complaint_type_id' => 'required_if:role,coordinator|nullable|exists:complaint_types,id',
+            'complaint_type_id' => 'required_if:role,coordinator,worker|nullable|exists:complaint_types,id',
         ]);
+        
+        // Custom validation to prevent workers from being assigned to Cleaning or Other departments
+        if ($validated['role'] === 'worker' && isset($validated['complaint_type_id'])) {
+            $complaintType = ComplaintType::find($validated['complaint_type_id']);
+            if ($complaintType && in_array($complaintType->name, ['Cleaning', 'Other'])) {
+                return back()->withErrors([
+                    'complaint_type_id' => 'Workers cannot be assigned to Cleaning or Other departments.'
+                ])->withInput();
+            }
+        }
 
         try {
             // Log the incoming data to debug

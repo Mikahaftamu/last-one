@@ -50,6 +50,28 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
             )
         );
     };
+    
+    // Get coordinator by campus and complaint type
+    const getCoordinatorByCampusAndType = (campusId: number, complaintTypeId: number) => {
+        return users.find(user => 
+            user.roles?.some(role => 
+                role.role === 'coordinator' && 
+                (role.pivot?.campus_id === campusId || role.campus_id === campusId) &&
+                (role.pivot?.complaint_type_id === complaintTypeId || role.complaint_type_id === complaintTypeId)
+            )
+        );
+    };
+    
+    // Get workers by coordinator (campus and complaint type)
+    const getWorkersByCoordinator = (campusId: number, complaintTypeId: number) => {
+        return users.filter(user => 
+            user.roles?.some(role => 
+                role.role === 'worker' && 
+                (role.pivot?.campus_id === campusId || role.campus_id === campusId) &&
+                (role.pivot?.complaint_type_id === complaintTypeId || role.complaint_type_id === complaintTypeId)
+            )
+        );
+    };
 
     const handleDelete = (userId: number) => {
         if (confirm('Are you sure you want to delete this user?')) {
@@ -108,8 +130,18 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
         });
     };
 
-    const handleCreateUser = (role: string) => {
-        router.get(route('admin.users.create'), { role });
+    const handleCreateUser = (role: string, complaintTypeId?: number, campusId?: number) => {
+        const params: any = { role };
+        
+        if (complaintTypeId) {
+            params.complaint_type_id = complaintTypeId;
+        }
+        
+        if (campusId) {
+            params.campus_id = campusId;
+        }
+        
+        router.get(route('admin.users.create'), params);
     };
 
     const filteredUsers = () => {
@@ -188,6 +220,12 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
         // Validate campus is selected
         if (!newCoordinator.campus_id) {
             setFormErrors({ campus_id: "Please select a campus" });
+            return;
+        }
+        
+        // Validate complaint type is selected
+        if (!newCoordinator.complaint_type_id) {
+            setFormErrors({ complaint_type_id: "Please select a complaint type" });
             return;
         }
         
@@ -652,6 +690,19 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                             <li className="mr-2">
                                                 <button
                                                     onClick={() => {
+                                                        setActiveTab('hierarchy'); 
+                                                        localStorage.setItem('dashboard_active_tab', 'hierarchy');
+                                                    }}
+                                                    className={`inline-block p-4 rounded-t-lg ${activeTab === 'hierarchy' 
+                                                        ? 'text-blue-600 border-b-2 border-blue-600' 
+                                                        : 'text-gray-500 hover:text-gray-600 hover:border-gray-300 border-b-2 border-transparent'}`}
+                                                >
+                                                    Hierarchy View
+                                                </button>
+                                            </li>
+                                            <li className="mr-2">
+                                                <button
+                                                    onClick={() => {
                                                         setActiveTab('vp'); 
                                                         setSelectedCampus(null);
                                                         localStorage.setItem('dashboard_active_tab', 'vp');
@@ -854,7 +905,7 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                     </table>
                                     
                                     {/* Empty state */}
-                                    {filteredUsers().length === 0 && (
+                                    {filteredUsers().length === 0 && activeTab !== 'hierarchy' && (
                                         <div className="bg-white border border-gray-200 rounded-lg text-center p-8 my-4">
                                             <div className="max-w-md mx-auto">
                                                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
@@ -877,6 +928,250 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                         </div>
                                     )}
                                 </div>
+                                
+                                {/* Hierarchy View */}
+                                {activeTab === 'hierarchy' && (
+                                    <div className="mt-6">
+                                        <div className="mb-6">
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Select Campus:</label>
+                                            <select 
+                                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full md:w-64 p-2.5"
+                                                value={selectedCampus || ''}
+                                                onChange={(e) => {
+                                                    const newCampusId = e.target.value ? Number(e.target.value) : null;
+                                                    setSelectedCampus(newCampusId);
+                                                }}
+                                            >
+                                                <option value="">Select a Campus</option>
+                                                {campuses.map((campus) => (
+                                                    <option key={campus.id} value={campus.id}>{campus.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        
+                                        {selectedCampus ? (
+                                            <div className="space-y-8">
+                                                {complaintTypes
+                                                    .filter(type => {
+                                                        // Check if there's a coordinator for this complaint type at this campus
+                                                        const coordinator = getCoordinatorByCampusAndType(selectedCampus, type.id);
+                                                        return coordinator !== undefined;
+                                                    })
+                                                    .map(type => {
+                                                        const coordinator = getCoordinatorByCampusAndType(selectedCampus, type.id);
+                                                        const workers = getWorkersByCoordinator(selectedCampus, type.id);
+                                                        
+                                                        // Only show complaint types that should have workers (water, electricity, plumbing)
+                                                        // Skip cleaning and other types that don't have workers
+                                                        const restrictedTypes = ['Cleaning', 'Other'];
+                                                        const shouldHaveWorkers = !restrictedTypes.includes(type.name);
+                                                        
+                                                        return (
+                                                            <div key={type.id} className="bg-white rounded-lg border border-gray-200 shadow-md overflow-hidden">
+                                                                <div className="bg-blue-50 p-4 border-b border-gray-200 flex justify-between items-center">
+                                                                    <div className="flex items-center space-x-3">
+                                                                        <div className="p-2 bg-blue-100 rounded-full">
+                                                                            <svg className="w-5 h-5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                                            </svg>
+                                                                        </div>
+                                                                        <div>
+                                                                            <h3 className="text-lg font-semibold text-gray-800">{type.name} Department</h3>
+                                                                            <p className="text-sm text-gray-600">{getCampusName(selectedCampus)} Campus</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    {shouldHaveWorkers && (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                if (!coordinator) {
+                                                                                    alert(`Please create a ${type.name} Coordinator first.`);
+                                                                                    return;
+                                                                                }
+                                                                                handleCreateUser('worker', type.id, selectedCampus);
+                                                                            }}
+                                                                            className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors shadow-sm"
+                                                                        >
+                                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                                                            </svg>
+                                                                            Add Worker
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                                
+                                                                <div className="p-4">
+                                                                    {/* Coordinator section */}
+                                                                    {coordinator ? (
+                                                                        <div className="mb-6">
+                                                                            <h4 className="text-md font-medium text-gray-700 mb-3 flex items-center">
+                                                                                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                                                </svg>
+                                                                                Coordinator:
+                                                                            </h4>
+                                                                            <div className="flex items-center p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                                                                <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center shadow-sm">
+                                                                                    <span className="text-blue-700 font-semibold">{coordinator.name.charAt(0).toUpperCase()}</span>
+                                                                                </div>
+                                                                                <div className="ml-4">
+                                                                                    <div className="font-medium">{coordinator.name}</div>
+                                                                                    <div className="text-sm text-gray-500">{coordinator.email}</div>
+                                                                                </div>
+                                                                                <div className="ml-auto flex space-x-2">
+                                                                                    <a
+                                                                                        href={route('admin.users.edit', coordinator.id)}
+                                                                                        className="p-2 text-blue-600 hover:bg-blue-100 rounded"
+                                                                                        title="Edit"
+                                                                                    >
+                                                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                                        </svg>
+                                                                                    </a>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="bg-yellow-50 text-yellow-800 p-4 rounded-lg mb-6 flex items-center justify-between border border-yellow-200">
+                                                                            <div className="flex items-center">
+                                                                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                                                </svg>
+                                                                                <p>No {type.name} Coordinator assigned to this campus</p>
+                                                                            </div>
+                                                                            <button
+                                                                                onClick={() => openAddCoordinatorModal(selectedCampus)}
+                                                                                className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-md text-sm font-medium border border-yellow-300 hover:bg-yellow-200"
+                                                                            >
+                                                                                Assign
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                    
+                                                                    {/* Workers section - only for types that should have workers */}
+                                                                    {shouldHaveWorkers && (
+                                                                        <div>
+                                                                            <h4 className="text-md font-medium text-gray-700 mb-3 flex items-center">
+                                                                                <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                                                </svg>
+                                                                                Workers:
+                                                                            </h4>
+                                                                            
+                                                                            {workers.length > 0 ? (
+                                                                                <div className="space-y-2">
+                                                                                    {workers.map(worker => (
+                                                                                        <div key={worker.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                                                                            <div className="flex items-center">
+                                                                                                <div className="flex-shrink-0 h-9 w-9 bg-green-100 rounded-full flex items-center justify-center shadow-sm">
+                                                                                                    <span className="text-green-700 font-semibold">{worker.name.charAt(0).toUpperCase()}</span>
+                                                                                                </div>
+                                                                                                <div className="ml-3">
+                                                                                                    <div className="font-medium">{worker.name}</div>
+                                                                                                    <div className="text-sm text-gray-500">{worker.email}</div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <div className="flex space-x-2">
+                                                                                                <a
+                                                                                                    href={route('admin.users.edit', worker.id)}
+                                                                                                    className="p-2 text-blue-600 hover:bg-blue-100 rounded"
+                                                                                                    title="Edit"
+                                                                                                >
+                                                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                                                    </svg>
+                                                                                                </a>
+                                                                                                <button
+                                                                                                    onClick={() => handleResetPassword(worker.id)}
+                                                                                                    className="p-2 text-yellow-600 hover:bg-yellow-100 rounded"
+                                                                                                    title="Reset Password"
+                                                                                                >
+                                                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                                                                                    </svg>
+                                                                                                </button>
+                                                                                                <button
+                                                                                                    onClick={() => handleDelete(worker.id)}
+                                                                                                    className="p-2 text-red-600 hover:bg-red-100 rounded"
+                                                                                                    title="Delete"
+                                                                                                >
+                                                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                                                    </svg>
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-gray-500">
+                                                                                    No workers assigned yet
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })
+                                                }
+                                                
+                                                {complaintTypes
+                                                    .filter(type => {
+                                                        const coordinator = getCoordinatorByCampusAndType(selectedCampus, type.id);
+                                                        return coordinator === undefined;
+                                                    })
+                                                    .length > 0 && (
+                                                    <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-md">
+                                                        <h3 className="text-lg font-medium text-gray-800 mb-3">Departments without Coordinators</h3>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                            {complaintTypes
+                                                                .filter(type => {
+                                                                    const coordinator = getCoordinatorByCampusAndType(selectedCampus, type.id);
+                                                                    return coordinator === undefined;
+                                                                })
+                                                                .map(type => (
+                                                                    <div key={type.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex justify-between items-center">
+                                                                        <div className="flex items-center">
+                                                                            <svg className="w-5 h-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                                                            </svg>
+                                                                            <span>{type.name}</span>
+                                                                        </div>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setNewCoordinator({
+                                                                                    ...newCoordinator,
+                                                                                    campus_id: selectedCampus.toString(),
+                                                                                    complaint_type_id: type.id.toString()
+                                                                                });
+                                                                                setShowCoordinatorModal(true);
+                                                                            }}
+                                                                            className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium hover:bg-blue-200"
+                                                                        >
+                                                                            Assign
+                                                                        </button>
+                                                                    </div>
+                                                                ))
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="bg-white border border-gray-200 rounded-lg text-center p-8">
+                                                <div className="max-w-md mx-auto">
+                                                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
+                                                        <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16l2.879-2.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242zM21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                    </div>
+                                                    <h3 className="text-lg font-medium text-gray-900 mb-1">Please Select a Campus</h3>
+                                                    <p className="text-gray-500 mb-4">Select a campus to view its coordinator-worker hierarchy.</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
