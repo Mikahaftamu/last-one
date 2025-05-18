@@ -3,6 +3,7 @@ import { Head } from '@inertiajs/react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import VPDashboard from '@/Components/Dashboard/VPDashboard';
 import CampusDetailStats from '@/Components/Dashboard/CampusDetailStats';
+import DashboardCharts from '@/Components/Dashboard/DashboardCharts';
 
 interface CampusStats {
     id: number;
@@ -125,6 +126,12 @@ export default function Dashboard({
                     <VPDashboard 
                         campusStats={campusStats} 
                         overallStats={processedOverallStats} 
+                    />
+                    
+                    {/* Visualizations Section */}
+                    <DashboardCharts 
+                        campusStats={campusStats}
+                        overallStats={processedOverallStats}
                     />
                     
                     {/* Campus Details Section */}
