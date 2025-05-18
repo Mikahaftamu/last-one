@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Complaint extends Model
 {
@@ -49,6 +50,11 @@ class Complaint extends Model
     public function worker(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_worker_id');
+    }
+    
+    public function progressUpdates(): HasMany
+    {
+        return $this->hasMany(ProgressUpdate::class);
     }
 
     protected static function boot()

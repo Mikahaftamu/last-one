@@ -310,4 +310,176 @@ class ComplaintController extends Controller
             return back()->withErrors(['error' => 'Failed to update complaint status: ' . $e->getMessage()]);
         }
     }
+    
+    public function workerDashboard()
+    {
+        try {
+            // Ensure the user is authenticated and is a worker
+            if (!Auth::check() || !Auth::user()->isWorker()) {
+                return redirect()->route('login')
+                    ->withErrors(['error' => 'You must be logged in as a worker to access this page.']);
+            }
+
+            $user = Auth::user();
+            
+            // Get complaints assigned to this worker with relationships
+            $complaints = Complaint::with(['campus', 'complaintType', 'coordinator', 'progressUpdates.user'])
+                ->where('assigned_worker_id', $user->id)
+                ->latest()
+                ->get();
+            
+            // Calculate statistics
+            $stats = [
+                'totalAssigned' => $complaints->count(),
+                'pending' => $complaints->where('status', 'pending')->count(),
+                'inProgress' => $complaints->where('status', 'in_progress')->count(),
+                'completed' => $complaints->where('status', 'completed')->count(),
+            ];
+            
+            // Calculate performance metrics
+            $completedComplaints = $complaints->where('status', 'completed');
+            
+            $performance = [
+                'completed' => $completedComplaints->count(),
+                'completionRate' => $complaints->count() > 0 
+                    ? round(($completedComplaints->count() / $complaints->count()) * 100) 
+                    : 0,
+                'avgResolutionTime' => 0, // Default value
+            ];
+            
+            // Calculate average resolution time if there are completed complaints
+            if ($completedComplaints->count() > 0) {
+                $totalResolutionHours = 0;
+                foreach ($completedComplaints as $complaint) {
+                    if ($complaint->resolved_at && $complaint->created_at) {
+                        $created = new \DateTime($complaint->created_at);
+                        $resolved = new \DateTime($complaint->resolved_at);
+                        $interval = $created->diff($resolved);
+                        $hours = $interval->days * 24 + $interval->h;
+                        $totalResolutionHours += $hours;
+                    }
+                }
+                $performance['avgResolutionTime'] = $completedComplaints->count() > 0
+                    ? round($totalResolutionHours / $completedComplaints->count())
+                    : 0;
+            }
+            
+            // Get all progress updates for this worker
+            $progressUpdates = \App\Models\ProgressUpdate::with(['complaint', 'user'])
+                ->whereIn('complaint_id', $complaints->pluck('id'))
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            // Return the worker dashboard view with data
+            return Inertia::render('Worker/Dashboard', [
+                'worker' => $user,
+                'complaints' => $complaints,
+                'stats' => $stats,
+                'performance' => $performance,
+                'progressUpdates' => $progressUpdates
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error accessing worker dashboard: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('login')
+                ->withErrors(['error' => 'An error occurred while accessing the dashboard. Please try again.']);
+        }
+    }
+    
+    public function workerUpdateStatus(Request $request)
+    {
+        try {
+            // Validate request
+            $validated = $request->validate([
+                'complaint_id' => 'required|exists:complaints,id',
+                'status' => 'required|in:in_progress,completed',
+                'resolution_notes' => 'required_if:status,completed|nullable|string',
+            ]);
+            
+            // Check if user is a worker
+            if (!Auth::check() || !Auth::user()->isWorker()) {
+                return back()->withErrors(['error' => 'You are not authorized to update complaint status.']);
+            }
+            
+            $user = Auth::user();
+            
+            // Get the complaint
+            $complaint = Complaint::findOrFail($validated['complaint_id']);
+            
+            // Verify the complaint is assigned to this worker
+            if ($complaint->assigned_worker_id != $user->id) {
+                return back()->withErrors(['error' => 'You are not authorized to update this complaint.']);
+            }
+            
+            // Update the status
+            $complaint->status = $validated['status'];
+            
+            // If completed, set the resolved_at timestamp and resolution notes
+            if ($validated['status'] === 'completed') {
+                $complaint->resolved_at = now();
+                $complaint->resolution_notes = $validated['resolution_notes'];
+                
+                // Handle resolution image if present (skipped for now)
+            }
+            
+            $complaint->save();
+            
+            return back()->with('message', 'Complaint status updated successfully.');
+            
+        } catch (\Exception $e) {
+            \Log::error('Error updating worker complaint status: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return back()->withErrors(['error' => 'Failed to update complaint status: ' . $e->getMessage()]);
+        }
+    }
+    
+    public function workerAddProgressUpdate(Request $request)
+    {
+        try {
+            // Validate request
+            $validated = $request->validate([
+                'complaint_id' => 'required|exists:complaints,id',
+                'progress_notes' => 'required|string',
+            ]);
+            
+            // Check if user is a worker
+            if (!Auth::check() || !Auth::user()->isWorker()) {
+                return back()->withErrors(['error' => 'You are not authorized to add progress updates.']);
+            }
+            
+            $user = Auth::user();
+            
+            // Get the complaint
+            $complaint = Complaint::findOrFail($validated['complaint_id']);
+            
+            // Verify the complaint is assigned to this worker
+            if ($complaint->assigned_worker_id != $user->id) {
+                return back()->withErrors(['error' => 'You are not authorized to update this complaint.']);
+            }
+            
+            // Create progress update
+            $progressUpdate = new \App\Models\ProgressUpdate();
+            $progressUpdate->complaint_id = $complaint->id;
+            $progressUpdate->user_id = $user->id;
+            $progressUpdate->notes = $validated['progress_notes'];
+            $progressUpdate->save();
+            
+            return back()->with('message', 'Progress update added successfully.');
+            
+        } catch (\Exception $e) {
+            \Log::error('Error adding progress update: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return back()->withErrors(['error' => 'Failed to add progress update: ' . $e->getMessage()]);
+        }
+    }
 } 

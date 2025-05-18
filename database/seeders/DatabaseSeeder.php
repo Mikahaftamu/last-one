@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             CampusSeeder::class,
             ComplaintTypeSeeder::class,
             UserSeeder::class,
+            TestComplaintSeeder::class,
         ]);
     }
 }

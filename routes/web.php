@@ -54,6 +54,8 @@ Route::middleware(['auth', \App\Http\Middleware\CheckUserRole::class.':coordinat
 // Worker routes
 Route::middleware(['auth', \App\Http\Middleware\CheckUserRole::class.':worker'])->prefix('worker')->name('worker.')->group(function () {
     Route::get('/', [ComplaintController::class, 'workerDashboard'])->name('dashboard');
+    Route::post('/complaints/update-status', [ComplaintController::class, 'workerUpdateStatus'])->name('complaints.update-status');
+    Route::post('/complaints/update-progress', [ComplaintController::class, 'workerAddProgressUpdate'])->name('complaints.update-progress');
 });
 
 // Complaint Status Routes
