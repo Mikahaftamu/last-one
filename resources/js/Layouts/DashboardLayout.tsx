@@ -25,11 +25,28 @@ export default function DashboardLayout({ children }: Props) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { auth } = usePage<CustomPageProps>().props;
     const user = auth.user;
+    
+    // Determine the dashboard route based on user role
+    const getDashboardRoute = () => {
+        // Make sure user has roles before accessing
+        if (user.roles && user.roles.length > 0) {
+            const userRole = user.roles[0].role;
+            return route(`${userRole}.dashboard`);
+        }
+        // Default fallback if no roles are found
+        return '/';
+    };
+    
+    // Get user role for display
+    const getUserRole = () => {
+        return user.roles && user.roles.length > 0 ? user.roles[0].role : 'user';
+    };
 
     const navigation = [
-        { name: 'Dashboard', href: route('dashboard'), current: true },
-        { name: 'Complaints', href: route('complaints.index'), current: false },
-        { name: 'Users', href: route('users.index'), current: false },
+        { name: 'Dashboard', href: getDashboardRoute(), current: true },
+        // Commented out routes that don't exist yet
+        // { name: 'Complaints', href: route('complaints.index'), current: false },
+        // { name: 'Users', href: route('users.index'), current: false },
     ];
 
     return (
@@ -40,7 +57,7 @@ export default function DashboardLayout({ children }: Props) {
                     <div className="flex justify-between h-16">
                         <div className="flex">
                             <div className="flex-shrink-0 flex items-center">
-                                <Link href={route('dashboard')} className="text-xl font-bold text-gray-800">
+                                <Link href={getDashboardRoute()} className="text-xl font-bold text-gray-800">
                                     Complaint System
                                 </Link>
                             </div>
@@ -64,7 +81,7 @@ export default function DashboardLayout({ children }: Props) {
                             <div className="ml-3 relative">
                                 <div className="flex items-center">
                                     <span className="text-sm text-gray-500 mr-4">
-                                        {user.name} ({user.roles[0].role})
+                                        {user.name} ({getUserRole()})
                                     </span>
                                     <Link
                                         href={route('logout')}
@@ -120,7 +137,7 @@ export default function DashboardLayout({ children }: Props) {
                             <div className="flex items-center px-4">
                                 <div className="flex-shrink-0">
                                     <span className="text-sm text-gray-500">
-                                        {user.name} ({user.roles[0].role})
+                                        {user.name} ({getUserRole()})
                                     </span>
                                 </div>
                             </div>

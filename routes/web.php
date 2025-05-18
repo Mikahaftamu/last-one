@@ -47,6 +47,8 @@ Route::middleware(['auth', \App\Http\Middleware\CheckUserRole::class.':director'
 // Coordinator routes
 Route::middleware(['auth', \App\Http\Middleware\CheckUserRole::class.':coordinator'])->prefix('coordinator')->name('coordinator.')->group(function () {
     Route::get('/', [ComplaintController::class, 'coordinatorDashboard'])->name('dashboard');
+    Route::post('/complaints/assign-worker', [ComplaintController::class, 'assignWorker'])->name('complaints.assign-worker');
+    Route::post('/complaints/update-status', [ComplaintController::class, 'updateComplaintStatus'])->name('complaints.update-status');
 });
 
 // Worker routes
