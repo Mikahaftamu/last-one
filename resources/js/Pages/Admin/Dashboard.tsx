@@ -24,7 +24,9 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
     const [searchTerm, setSearchTerm] = useState('');
     const [activeSection, setActiveSection] = useState(() => {
         // Try to restore active section from localStorage
-        return localStorage.getItem('dashboard_active_section') || 'dashboard';
+        const saved = localStorage.getItem('dashboard_active_section');
+        console.log("Loaded active section from localStorage:", saved);
+        return saved || 'dashboard';
     });
     const [showCoordinatorModal, setShowCoordinatorModal] = useState(false);
     const [selectedComplaintType, setSelectedComplaintType] = useState<number | null>(null);
@@ -242,19 +244,21 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
             {/* Main layout */}
             <div className="min-h-screen bg-gray-50">
                 {/* Top navigation */}
-                <nav className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-30 w-full shadow-sm">
-                    <div className="px-4 py-3 mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <nav className="bg-white border-b border-gray-200 sticky top-0 left-0 right-0 z-30 w-full shadow-md">
+                    <div className="px-6 py-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                                </svg>
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-50 rounded-full">
+                                    <svg className="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                    </svg>
+                                </div>
                                 <h1 className="font-bold text-xl text-gray-800">Complaint Management System</h1>
                             </div>
-                            <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-5">
                                 <div className="hidden md:flex items-center">
-                                    <div className="flex items-center space-x-2 py-2 px-4 bg-gray-100 rounded-lg">
-                                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                                    <div className="flex items-center space-x-3 py-2 px-4 bg-gray-100 rounded-lg border border-gray-200">
+                                        <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold shadow-sm">
                                             {auth.user.name.charAt(0).toUpperCase()}
                                         </div>
                                         <div>
@@ -265,7 +269,7 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                 </div>
                                 <button
                                     onClick={handleLogout}
-                                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors shadow-sm"
                                 >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -278,25 +282,35 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                 </nav>
                 
                 {/* Page content */}
-                <div className="pt-16 pb-12">
+                <div className="py-6">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         {/* Dashboard header and section tabs */}
-                        <div className="mb-6 mt-6">
-                            <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
-                            <p className="text-gray-600 mt-1 mb-4">Manage users and system configuration</p>
+                        <div className="mb-8 mt-2">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+                                    <p className="text-gray-600 mt-1">Manage users and system configuration</p>
+                                </div>
+                                <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg border border-blue-200 shadow-sm">
+                                    <p className="text-sm font-medium">Today: {new Date().toLocaleDateString('en-US', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</p>
+                                </div>
+                            </div>
                             
                             {/* Navigation tabs */}
-                            <div className="border-b border-gray-200 mb-6">
-                                <nav className="-mb-px flex space-x-6">
+                            <div className="border-b border-gray-200 mt-6 mb-6">
+                                <nav className="-mb-px flex w-full">
                                     <button 
                                         onClick={() => {
                                             setActiveSection('dashboard');
                                             localStorage.setItem('dashboard_active_section', 'dashboard');
                                         }}
-                                        className={`pb-4 px-1 ${activeSection === 'dashboard' 
-                                            ? 'border-b-2 border-blue-500 text-blue-600 font-medium'
-                                            : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                                        className={`flex-1 pb-4 px-4 py-3 flex justify-center items-center transition-colors ${activeSection === 'dashboard' 
+                                            ? 'border-b-2 border-blue-500 text-blue-600 font-medium bg-blue-50'
+                                            : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'}`}
                                     >
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                        </svg>
                                         Dashboard Overview
                                     </button>
                                     <button 
@@ -304,10 +318,13 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                             setActiveSection('coordinators');
                                             localStorage.setItem('dashboard_active_section', 'coordinators');
                                         }}
-                                        className={`pb-4 px-1 ${activeSection === 'coordinators' 
-                                            ? 'border-b-2 border-blue-500 text-blue-600 font-medium'
-                                            : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                                        className={`flex-1 pb-4 px-4 py-3 flex justify-center items-center transition-colors ${activeSection === 'coordinators' 
+                                            ? 'border-b-2 border-blue-500 text-blue-600 font-medium bg-blue-50'
+                                            : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'}`}
                                     >
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        </svg>
                                         Campus Coordinators
                                     </button>
                                     <button 
@@ -315,10 +332,13 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                             setActiveSection('users');
                                             localStorage.setItem('dashboard_active_section', 'users');
                                         }}
-                                        className={`pb-4 px-1 ${activeSection === 'users' 
-                                            ? 'border-b-2 border-blue-500 text-blue-600 font-medium'
-                                            : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                                        className={`flex-1 pb-4 px-4 py-3 flex justify-center items-center transition-colors ${activeSection === 'users' 
+                                            ? 'border-b-2 border-blue-500 text-blue-600 font-medium bg-blue-50'
+                                            : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'}`}
                                     >
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                        </svg>
                                         User Management
                                     </button>
                                 </nav>
@@ -329,11 +349,17 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                         {activeSection === 'dashboard' && (
                             <>
                                 {/* Main dashboard content - two column layout */}
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
                                     {/* Left column - stats overview */}
-                                    <div className="lg:col-span-2">
-                                        <div className="bg-white shadow-md rounded-lg p-6 h-full">
-                                            <h2 className="text-lg font-semibold text-gray-700 mb-4">System Overview</h2>
+                                    <div className="lg:col-span-3">
+                                        <div className="bg-white shadow-md rounded-lg p-6 h-full border border-gray-100">
+                                            <div className="flex justify-between items-center mb-6">
+                                                <h2 className="text-lg font-semibold text-gray-800">System Overview</h2>
+                                                <div className="flex space-x-2">
+                                                    <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium border border-green-200">Active</span>
+                                                    <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium border border-blue-200">Updated</span>
+                                                </div>
+                                            </div>
                                             
                                             {/* Stats cards */}
                                             <div className="grid grid-cols-2 gap-4">
@@ -398,8 +424,16 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
 
                                     {/* Right column - User distribution */}
                                     <div className="lg:col-span-1">
-                                        <div className="bg-white shadow-md rounded-lg p-6 h-full">
-                                            <h2 className="text-lg font-semibold text-gray-700 mb-4">User Distribution</h2>
+                                        <div className="bg-white shadow-md rounded-lg p-6 h-full border border-gray-100">
+                                            <div className="flex justify-between items-center mb-6">
+                                                <h2 className="text-lg font-semibold text-gray-800">User Distribution</h2>
+                                                <div className="p-1 rounded-full bg-gray-50">
+                                                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                                                    </svg>
+                                                </div>
+                                            </div>
                                             <div className="grid gap-4">
                                                 <div className="p-4 rounded-lg border border-gray-100 bg-gray-50">
                                                     <div className="flex items-center justify-between">
@@ -463,18 +497,33 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
 
                         {/* Campus Coordinators Management Section */}
                         {activeSection === 'coordinators' && (
-                            <div className="bg-white shadow-md rounded-lg p-6 mb-8">
-                                <h2 className="text-xl font-semibold text-gray-800 mb-6">Campus Coordinators Management</h2>
+                            <div className="bg-white shadow-md rounded-lg p-6 mb-8 border border-gray-100">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-semibold text-gray-800">Campus Coordinators Management</h2>
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-sm text-gray-500">{campuses.length} campuses available</span>
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            Management
+                                        </span>
+                                    </div>
+                                </div>
                                 
                                 {/* Campus cards */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                     {campuses.map(campus => (
-                                        <div key={campus.id} className="bg-white border border-gray-200 rounded-lg shadow">
+                                        <div key={campus.id} className="bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow">
                                             <div className="p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
                                                 <div className="flex justify-between items-center">
-                                                    <h3 className="text-lg font-semibold text-gray-800">{campus.name}</h3>
+                                                    <div className="flex items-center space-x-2">
+                                                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700">
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                            </svg>
+                                                        </div>
+                                                        <h3 className="text-lg font-semibold text-gray-800">{campus.name}</h3>
+                                                    </div>
                                                     <button 
-                                                        className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors shadow-sm"
+                                                        className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors shadow-sm"
                                                         onClick={() => openAddCoordinatorModal(campus.id)}
                                                     >
                                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -544,8 +593,16 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
 
                         {/* User Management Section */}
                         {activeSection === 'users' && (
-                            <div className="bg-white shadow-md rounded-lg p-6 mb-8">
-                                <h2 className="text-xl font-semibold text-gray-800 mb-6">User Management</h2>
+                            <div className="bg-white shadow-md rounded-lg p-6 mb-8 border border-gray-100">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-semibold text-gray-800">User Management</h2>
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-sm text-gray-500">{users.length} users total</span>
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Active
+                                        </span>
+                                    </div>
+                                </div>
                                 
                                 {/* Filters and actions */}
                                 <div className="mb-6">
@@ -626,7 +683,7 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                     <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0 mb-4">
                                         <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-4">
                                             {/* Search */}
-                                            <div className="relative">
+                                            <div className="relative flex-1 max-w-md">
                                                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                                     <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -706,37 +763,38 @@ export default function Dashboard({ users, campuses, complaintTypes, auth }: Pag
                                 </div>
                                 
                                 {/* User table */}
-                                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                                <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-md">
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
                                             <tr>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Name
                                                 </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Email
                                                 </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Role
                                                 </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Campus
                                                 </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Actions
                                                 </th>
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
                                             {filteredUsers().map((user) => (
-                                                <tr key={user.id} className="hover:bg-gray-50">
+                                                <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="flex items-center">
-                                                            <div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
-                                                                <span className="text-gray-500 font-medium">{user.name.charAt(0).toUpperCase()}</span>
+                                                            <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center shadow-sm">
+                                                                <span className="text-blue-700 font-semibold">{user.name.charAt(0).toUpperCase()}</span>
                                                             </div>
                                                             <div className="ml-4">
                                                                 <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                                                                <div className="text-xs text-gray-500">ID: {user.id}</div>
                                                             </div>
                                                         </div>
                                                     </td>
