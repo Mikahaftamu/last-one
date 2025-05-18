@@ -630,4 +630,191 @@ class ComplaintController extends Controller
                 ->withErrors(['error' => 'An error occurred while accessing the dashboard. Please try again.']);
         }
     }
+    
+    /**
+     * Display the Director dashboard with complaint type statistics and department performance
+     */
+    public function directorDashboard()
+    {
+        try {
+            // Ensure the user is authenticated and is a Director
+            if (!Auth::check() || !Auth::user()->hasRole('director')) {
+                return redirect()->route('login')
+                    ->withErrors(['error' => 'You must be logged in as a Director to access this page.']);
+            }
+
+            // Get statistics for all complaint types
+            $complaintTypeStats = ComplaintType::select('id', 'name')
+                ->withCount(['complaints as total_complaints' => function($query) {
+                    $query->whereNotNull('id');
+                }])
+                ->withCount(['complaints as pending_complaints' => function($query) {
+                    $query->where('status', 'pending');
+                }])
+                ->withCount(['complaints as resolved_complaints' => function($query) {
+                    $query->where('status', 'completed');
+                }])
+                ->get();
+                
+            // Add average resolution time to each complaint type
+            foreach ($complaintTypeStats as $type) {
+                $typeResolvedComplaints = Complaint::where('complaint_type_id', $type->id)
+                    ->whereNotNull('resolved_at')
+                    ->get();
+                
+                $avgResolutionTime = 0;
+                if ($typeResolvedComplaints->count() > 0) {
+                    $totalResolutionTime = 0;
+                    foreach ($typeResolvedComplaints as $complaint) {
+                        $created = new \DateTime($complaint->created_at);
+                        $resolved = new \DateTime($complaint->resolved_at);
+                        $totalResolutionTime += $created->diff($resolved)->days;
+                    }
+                    $avgResolutionTime = round($totalResolutionTime / $typeResolvedComplaints->count(), 1);
+                }
+                
+                $type->average_resolution_time = $avgResolutionTime;
+            }
+
+            // Get all campuses with complaint statistics
+            $campusStats = Campus::select('id', 'name')
+                ->withCount(['complaints as total_complaints' => function($query) {
+                    $query->whereNotNull('id');
+                }])
+                ->withCount(['complaints as pending_complaints' => function($query) {
+                    $query->where('status', 'pending');
+                }])
+                ->withCount(['complaints as resolved_complaints' => function($query) {
+                    $query->where(function($q) {
+                        $q->where('status', 'completed')
+                          ->orWhere('status', 'resolved');
+                    });
+                }])
+                ->get();
+
+            // Get overall statistics
+            $totalComplaints = Complaint::count();
+            $pendingComplaints = Complaint::where('status', 'pending')->count();
+            
+            // Get resolved complaints with related data for display
+            $resolvedComplaints = Complaint::with(['campus', 'complaintType'])
+                ->where(function($query) {
+                    $query->where('status', 'completed')
+                          ->orWhere('status', 'resolved');
+                })
+                ->orderBy('resolved_at', 'desc')
+                ->take(10)
+                ->get();
+                
+            // Calculate average resolution time for all resolved complaints
+            $avgResolutionTime = 0;
+            if ($resolvedComplaints->count() > 0) {
+                $totalResolutionTime = 0;
+                foreach ($resolvedComplaints as $complaint) {
+                    if ($complaint->resolved_at) {
+                        $created = new \DateTime($complaint->created_at);
+                        $resolved = new \DateTime($complaint->resolved_at);
+                        $totalResolutionTime += $created->diff($resolved)->days;
+                    }
+                }
+                $avgResolutionTime = $totalResolutionTime / $resolvedComplaints->count();
+            }
+            
+            // Calculate overall satisfaction rate
+            $satisfactionRate = 90; // Default placeholder - implement actual calculation if you have a user feedback system
+            
+            // Get recent complaints for display
+            $recentComplaints = Complaint::with(['campus', 'complaintType'])
+                ->orderBy('created_at', 'desc')
+                ->take(10)
+                ->get();
+            
+            // Get department performance data
+            $departmentPerformance = [];
+            
+            foreach (ComplaintType::all() as $type) {
+                $assignedComplaints = Complaint::where('complaint_type_id', $type->id)
+                    ->where(function($query) {
+                        $query->whereNotNull('assigned_coordinator_id')
+                              ->orWhereNotNull('assigned_worker_id');
+                    })
+                    ->get();
+                
+                $totalAssigned = $assignedComplaints->count();
+                
+                // Skip if no complaints were assigned to this department
+                if ($totalAssigned == 0) {
+                    continue;
+                }
+                
+                // Count complaints resolved within the target time (e.g., 7 days)
+                $resolvedOnTime = 0;
+                $totalResolutionTime = 0;
+                
+                foreach ($assignedComplaints as $complaint) {
+                    if ($complaint->resolved_at) {
+                        $created = new \DateTime($complaint->created_at);
+                        $resolved = new \DateTime($complaint->resolved_at);
+                        $resolutionDays = $created->diff($resolved)->days;
+                        
+                        // Consider a complaint resolved on time if it was done within 7 days
+                        if ($resolutionDays <= 7) {
+                            $resolvedOnTime++;
+                        }
+                        
+                        $totalResolutionTime += $resolutionDays;
+                    }
+                }
+                
+                // Calculate average resolution time
+                $avgResolutionTime = ($totalAssigned > 0 && $resolvedOnTime > 0) 
+                    ? $totalResolutionTime / $resolvedOnTime 
+                    : 0;
+                
+                // Placeholder for satisfaction rate - implement actual calculation if you have a feedback system
+                $deptSatisfactionRate = rand(75, 98);
+                
+                // Only add departments with assigned complaints
+                if ($totalAssigned > 0) {
+                    $departmentPerformance[] = [
+                        'id' => $type->id,
+                        'name' => $type->name,
+                        'total_assigned' => $totalAssigned,
+                        'resolved_on_time' => $resolvedOnTime,
+                        'avg_resolution_time' => $avgResolutionTime,
+                        'satisfaction_rate' => $deptSatisfactionRate
+                    ];
+                }
+            }
+
+            // Get all campuses and complaint types for data context
+            $campuses = Campus::all();
+            $complaintTypes = ComplaintType::all();
+
+            return Inertia::render('Director/Dashboard', [
+                'complaintTypeStats' => $complaintTypeStats,
+                'overallStats' => [
+                    'totalComplaints' => $totalComplaints,
+                    'pendingComplaints' => $pendingComplaints,
+                    'resolvedComplaints' => $resolvedComplaints,
+                    'averageResolutionTime' => $avgResolutionTime,
+                    'satisfactionRate' => $satisfactionRate
+                ],
+                'recentComplaints' => $recentComplaints,
+                'departmentPerformance' => $departmentPerformance,
+                'campusStats' => $campusStats,
+                'campuses' => $campuses,
+                'complaintTypes' => $complaintTypes
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error accessing Director dashboard: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('login')
+                ->withErrors(['error' => 'An error occurred while accessing the dashboard. Please try again.']);
+        }
+    }
 } 
