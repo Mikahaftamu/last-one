@@ -482,4 +482,152 @@ class ComplaintController extends Controller
             return back()->withErrors(['error' => 'Failed to add progress update: ' . $e->getMessage()]);
         }
     }
+
+    /**
+     * Display the VP dashboard with overall statistics and campus-wise data
+     */
+    public function vpDashboard()
+    {
+        try {
+            // Ensure the user is authenticated and is a VP
+            if (!Auth::check() || !Auth::user()->hasRole('vp')) {
+                return redirect()->route('login')
+                    ->withErrors(['error' => 'You must be logged in as a VP to access this page.']);
+            }
+
+            // Get statistics for all campuses
+            $campusStats = Campus::withCount(['complaints as total_complaints' => function($query) {
+                    $query->whereNotNull('id');
+                }])
+                ->withCount(['complaints as pending_complaints' => function($query) {
+                    $query->where('status', 'pending');
+                }])
+                ->withCount(['complaints as resolved_complaints' => function($query) {
+                    $query->where('status', 'completed');
+                }])
+                ->get();
+
+            // Calculate overall statistics
+            $totalComplaints = Complaint::count();
+            $pendingComplaints = Complaint::where('status', 'pending')->count();
+            $resolvedComplaints = Complaint::where('status', 'completed')->count();
+            
+            // Calculate average resolution time in days
+            $avgResolutionTime = 0;
+            $resolvedComplaints = Complaint::whereNotNull('resolved_at')->get();
+            
+            if ($resolvedComplaints->count() > 0) {
+                $totalResolutionTime = 0;
+                foreach ($resolvedComplaints as $complaint) {
+                    $created = new \DateTime($complaint->created_at);
+                    $resolved = new \DateTime($complaint->resolved_at);
+                    $totalResolutionTime += $created->diff($resolved)->days;
+                }
+                $avgResolutionTime = round($totalResolutionTime / $resolvedComplaints->count(), 1);
+            }
+
+            // Get recent complaints
+            $recentComplaints = Complaint::with(['campus', 'complaintType'])
+                ->latest()
+                ->take(10)
+                ->get();
+                
+            // Prepare campus details data
+            $campusDetails = [];
+            foreach ($campusStats as $campus) {
+                // Get complaint type stats for this campus
+                $complaintTypeStats = [];
+                $complaintTypes = ComplaintType::all();
+                
+                foreach ($complaintTypes as $type) {
+                    $count = Complaint::where('campus_id', $campus->id)
+                        ->where('complaint_type_id', $type->id)
+                        ->count();
+                        
+                    $pending = Complaint::where('campus_id', $campus->id)
+                        ->where('complaint_type_id', $type->id)
+                        ->where('status', 'pending')
+                        ->count();
+                        
+                    $inProgress = Complaint::where('campus_id', $campus->id)
+                        ->where('complaint_type_id', $type->id)
+                        ->where('status', 'in_progress')
+                        ->count();
+                        
+                    $completed = Complaint::where('campus_id', $campus->id)
+                        ->where('complaint_type_id', $type->id)
+                        ->where('status', 'completed')
+                        ->count();
+                    
+                    if ($count > 0) {
+                        $complaintTypeStats[] = [
+                            'id' => $type->id,
+                            'name' => $type->name,
+                            'count' => $count,
+                            'pending' => $pending,
+                            'in_progress' => $inProgress,
+                            'completed' => $completed
+                        ];
+                    }
+                }
+                
+                // Get coordinator and worker counts
+                $coordinatorCount = User::whereHas('roles', function($query) use ($campus) {
+                    $query->where('roles.role', 'coordinator')
+                        ->where('user_roles.campus_id', $campus->id);
+                })->count();
+                
+                $workerCount = User::whereHas('roles', function($query) use ($campus) {
+                    $query->where('roles.role', 'worker')
+                        ->where('user_roles.campus_id', $campus->id);
+                })->count();
+                
+                // Calculate average resolution time for this campus
+                $campusAvgResolutionTime = 0;
+                $campusResolvedComplaints = Complaint::where('campus_id', $campus->id)
+                    ->whereNotNull('resolved_at')
+                    ->get();
+                
+                if ($campusResolvedComplaints->count() > 0) {
+                    $totalResolutionTime = 0;
+                    foreach ($campusResolvedComplaints as $complaint) {
+                        $created = new \DateTime($complaint->created_at);
+                        $resolved = new \DateTime($complaint->resolved_at);
+                        $totalResolutionTime += $created->diff($resolved)->days;
+                    }
+                    $campusAvgResolutionTime = round($totalResolutionTime / $campusResolvedComplaints->count(), 1);
+                }
+                
+                $campusDetails[$campus->id] = [
+                    'id' => $campus->id,
+                    'name' => $campus->name,
+                    'complaintTypeStats' => $complaintTypeStats,
+                    'coordinatorCount' => $coordinatorCount,
+                    'workerCount' => $workerCount,
+                    'avgResolutionTime' => $campusAvgResolutionTime
+                ];
+            }
+
+            return Inertia::render('VP/Dashboard', [
+                'campusStats' => $campusStats,
+                'overallStats' => [
+                    'totalComplaints' => $totalComplaints,
+                    'pendingComplaints' => $pendingComplaints,
+                    'resolvedComplaints' => $resolvedComplaints,
+                    'averageResolutionTime' => $avgResolutionTime
+                ],
+                'recentComplaints' => $recentComplaints,
+                'campusDetails' => $campusDetails
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error accessing VP dashboard: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('login')
+                ->withErrors(['error' => 'An error occurred while accessing the dashboard. Please try again.']);
+        }
+    }
 } 

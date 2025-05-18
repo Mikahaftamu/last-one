@@ -16,7 +16,7 @@ interface Props {
         totalComplaints: number;
         pendingComplaints: number;
         resolvedComplaints: number;
-        averageResolutionTime: number;
+        averageResolutionTime: number | any;
     };
 }
 
@@ -26,6 +26,16 @@ export default function VPDashboard({ campusStats = [], overallStats = {
     resolvedComplaints: 0,
     averageResolutionTime: 0,
 } }: Props) {
+    const safeRender = (value: any): string | number => {
+        if (typeof value === 'string' || typeof value === 'number') {
+            return value;
+        }
+        if (value === null || value === undefined) {
+            return 'N/A';
+        }
+        return JSON.stringify(value);
+    };
+
     return (
         <div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -40,7 +50,7 @@ export default function VPDashboard({ campusStats = [], overallStats = {
                             <div className="ml-5 w-0 flex-1">
                                 <dl>
                                     <dt className="text-sm font-medium text-gray-500 truncate">Total Complaints</dt>
-                                    <dd className="text-lg font-medium text-gray-900">{overallStats.totalComplaints}</dd>
+                                    <dd className="text-lg font-medium text-gray-900">{safeRender(overallStats.totalComplaints)}</dd>
                                 </dl>
                             </div>
                         </div>
@@ -58,7 +68,7 @@ export default function VPDashboard({ campusStats = [], overallStats = {
                             <div className="ml-5 w-0 flex-1">
                                 <dl>
                                     <dt className="text-sm font-medium text-gray-500 truncate">Pending Complaints</dt>
-                                    <dd className="text-lg font-medium text-gray-900">{overallStats.pendingComplaints}</dd>
+                                    <dd className="text-lg font-medium text-gray-900">{safeRender(overallStats.pendingComplaints)}</dd>
                                 </dl>
                             </div>
                         </div>
@@ -76,7 +86,7 @@ export default function VPDashboard({ campusStats = [], overallStats = {
                             <div className="ml-5 w-0 flex-1">
                                 <dl>
                                     <dt className="text-sm font-medium text-gray-500 truncate">Resolved Complaints</dt>
-                                    <dd className="text-lg font-medium text-gray-900">{overallStats.resolvedComplaints}</dd>
+                                    <dd className="text-lg font-medium text-gray-900">{safeRender(overallStats.resolvedComplaints)}</dd>
                                 </dl>
                             </div>
                         </div>
@@ -94,7 +104,11 @@ export default function VPDashboard({ campusStats = [], overallStats = {
                             <div className="ml-5 w-0 flex-1">
                                 <dl>
                                     <dt className="text-sm font-medium text-gray-500 truncate">Avg. Resolution Time</dt>
-                                    <dd className="text-lg font-medium text-gray-900">{overallStats.averageResolutionTime} days</dd>
+                                    <dd className="text-lg font-medium text-gray-900">
+                                        {typeof overallStats.averageResolutionTime === 'number' 
+                                            ? `${safeRender(overallStats.averageResolutionTime)} days` 
+                                            : safeRender(overallStats.averageResolutionTime)}
+                                    </dd>
                                 </dl>
                             </div>
                         </div>
