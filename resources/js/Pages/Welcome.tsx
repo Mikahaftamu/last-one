@@ -63,7 +63,7 @@ export default function Welcome({ auth, flash }: WelcomeProps) {
                         </h1>
                         <Link
                             href={route('login')}
-                            className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors duration-300 shadow-lg hover:shadow-xl"
+                            className="px-6 py-3 bg-indigo-600 text-black rounded-lg font-semibold hover:bg-indigo-700 transition-colors duration-300 shadow-lg hover:shadow-xl"
                         >
                             Login
                         </Link>
