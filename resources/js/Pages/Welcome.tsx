@@ -57,10 +57,16 @@ export default function Welcome({ auth, flash }: WelcomeProps) {
 
                 {/* Main content */}
                 <section className="relative z-10 max-w-7xl w-full p-6 lg:p-8 animate-fadeIn">
-                    <header className="flex justify-center mb-16">
+                    <header className="flex justify-between items-center mb-16">
                         <h1 className="text-5xl font-bold text-center text-black">
                             Complaint Management System
                         </h1>
+                        <Link
+                            href={route('login')}
+                            className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors duration-300 shadow-lg hover:shadow-xl"
+                        >
+                            Login
+                        </Link>
                     </header>
 
                     <div className="grid grid-cols-1 gap-6 mt-16 md:grid-cols-2 lg:gap-10">
