@@ -86,11 +86,18 @@ export default function Show({ complaint }: Props) {
                                 <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                                     <dt className="text-sm font-medium text-gray-500">Image</dt>
                                     <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                                        <img
-                                            src={`/storage/${complaint.image_path}`}
-                                            alt="Complaint"
-                                            className="max-w-lg rounded-lg shadow-lg"
-                                        />
+                                        <div className="relative w-full max-w-xl mx-auto">
+                                            <img
+                                                src={`/storage/${complaint.image_path}`}
+                                                alt="Complaint"
+                                                className="w-full h-auto rounded-lg shadow-lg"
+                                                style={{
+                                                    maxHeight: '400px',
+                                                    objectFit: 'contain',
+                                                    backgroundColor: '#f9fafb'
+                                                }}
+                                            />
+                                        </div>
                                     </dd>
                                 </div>
                             )}
