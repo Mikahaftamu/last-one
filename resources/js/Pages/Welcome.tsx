@@ -1,6 +1,6 @@
 import { Link, Head } from '@inertiajs/react';
 import { User } from '@/types';
-import React from 'react';
+import React, { useState } from 'react';
 
 interface PageProps {
     auth: {
@@ -18,142 +18,198 @@ interface WelcomeProps extends PageProps {}
 declare function route(name: string, params?: any): string;
 
 export default function Welcome({ auth, flash }: WelcomeProps) {
-    const cardBaseStyles =
-        'scale-100 p-8 bg-white border border-gray-200 rounded-xl shadow-2xl transition-all duration-500 hover:scale-[1.02] motion-safe:transform motion-safe:hover:scale-[1.02] backdrop-blur-sm';
-    const linkButtonStyles =
-        'mt-6 px-6 py-3 rounded-lg text-black font-bold text-lg transition-all duration-300 shadow-lg focus:outline focus:outline-2 focus:outline-offset-2 relative overflow-hidden';
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    const navLinkStyles = 'px-4 py-2 text-gray-700 hover:text-[#1B4D3E] transition-colors duration-300 font-medium';
+    const buttonStyles = 'px-6 py-2 rounded-lg text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl';
 
     return (
         <>
-            <Head title="Welcome" />
+            <Head title="Mekelle University - Complaint Management System" />
 
-            <main className="relative min-h-screen bg-gray-100 selection:bg-indigo-500 selection:text-white sm:flex sm:items-center sm:justify-center">
-                {/* Background gradient with animated elements */}
-                <div className="absolute inset-0 z-0 overflow-hidden">
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-50 via-gray-100 to-gray-200"></div>
-                    
-                    {/* Animated floating orbs */}
-                    <div className="absolute top-10 left-[10%] w-64 h-64 rounded-full bg-purple-100 mix-blend-multiply animate-float-slow"></div>
-                    <div className="absolute bottom-10 right-[10%] w-96 h-96 rounded-full bg-indigo-100 mix-blend-multiply animate-float-medium"></div>
-                    <div className="absolute top-[40%] right-[20%] w-48 h-48 rounded-full bg-pink-100 mix-blend-multiply animate-float-fast"></div>
-                    
-                    {/* Grid pattern overlay */}
-                    <div className="absolute inset-0 bg-grid-pattern opacity-[0.03]"></div>
-                </div>
+            <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100">
+                {/* Navigation Bar */}
+                <nav className="bg-white shadow-lg border-b border-gray-200">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex justify-between items-center h-16 sm:h-20 md:h-24">
+                            {/* Logo and Title Section */}
+                            <div className="flex items-center">
+                                <div className="flex-shrink-0">
+                                    <img 
+                                        src="mu.jpg" 
+                                        alt="Mekelle University Logo" 
+                                        className="h-9 w-9 sm:h-11 sm:w-11 md:h-12 md:w-12 object-contain rounded-full border-2 border-[#1B4D3E]/10"
+                                    />
+                                </div>
+                                <div className="ml-3 sm:ml-4">
+                                    <h1 className="text-base sm:text-lg md:text-xl font-bold text-[#1B4D3E] leading-tight">Mekelle University</h1>
+                                    <p className="text-xs sm:text-sm text-gray-600 leading-tight">Complaint Management System</p>
+                                </div>
+                            </div>
 
-                
+                            {/* Desktop Navigation */}
+                            <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
+                                <Link href="/" className="text-base lg:text-lg text-gray-700 hover:text-[#1B4D3E] transition-colors duration-300 font-medium flex items-center gap-1.5">
+                                    <svg className="h-5 w-5 lg:h-6 lg:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                                    </svg>
+                                    Home
+                                </Link>
+                                <Link href={route('complaints.create')} className="text-base lg:text-lg text-gray-700 hover:text-[#1B4D3E] transition-colors duration-300 font-medium flex items-center gap-1.5">
+                                    <svg className="h-5 w-5 lg:h-6 lg:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                    </svg>
+                                    Submit Complaint
+                                </Link>
+                                <Link href={route('complaints.track')} className="text-base lg:text-lg text-gray-700 hover:text-[#1B4D3E] transition-colors duration-300 font-medium flex items-center gap-1.5">
+                                    <svg className="h-5 w-5 lg:h-6 lg:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                    </svg>
+                                    Track Complaint
+                                </Link>
+                                <Link
+                                    href={route('login')}
+                                    className="text-base lg:text-lg text-gray-700 hover:text-[#1B4D3E] transition-colors duration-300 font-medium flex items-center gap-1.5"
+                                >
+                                    <svg className="h-5 w-5 lg:h-6 lg:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                                    </svg>
+                                    Login
+                                </Link>
+                            </div>
+
+                            {/* Mobile menu button */}
+                            <div className="md:hidden">
+                                <button 
+                                    type="button" 
+                                    className="text-gray-700 hover:text-[#1B4D3E] focus:outline-none p-2"
+                                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                    aria-label="Toggle menu"
+                                >
+                                    {isMobileMenuOpen ? (
+                                        <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    ) : (
+                                        <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"/>
+                                        </svg>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Mobile Navigation Menu */}
+                        <div className={`md:hidden transition-all duration-300 ease-in-out ${isMobileMenuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                            <div className="py-3 border-t border-gray-200 bg-white shadow-lg">
+                                <div className="flex flex-col space-y-2">
+                                    <Link 
+                                        href="/" 
+                                        className="text-lg text-black hover:text-[#1B4D3E] hover:bg-gray-50 transition-colors duration-300 font-bold flex items-center gap-3 px-5 py-4"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                    >
+                                        <svg className="h-6 w-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                                        </svg>
+                                        Home
+                                    </Link>
+                                    <Link 
+                                        href={route('complaints.create')} 
+                                        className="text-lg text-black hover:text-[#1B4D3E] hover:bg-gray-50 transition-colors duration-300 font-bold flex items-center gap-3 px-5 py-4"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                    >
+                                        <svg className="h-6 w-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                        </svg>
+                                        Submit Complaint
+                                    </Link>
+                                    <Link 
+                                        href={route('complaints.track')} 
+                                        className="text-lg text-black hover:text-[#1B4D3E] hover:bg-gray-50 transition-colors duration-300 font-bold flex items-center gap-3 px-5 py-4"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                    >
+                                        <svg className="h-6 w-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                        </svg>
+                                        Track Complaint
+                                    </Link>
+                                    <Link 
+                                        href={route('login')} 
+                                        className="text-lg text-black hover:text-[#1B4D3E] hover:bg-gray-50 transition-colors duration-300 font-bold flex items-center gap-3 px-5 py-4"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                    >
+                                        <svg className="h-6 w-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                                        </svg>
+                                        Login
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
 
                 {/* Flash messages */}
                 {(flash.message || flash.status) && (
                     <div className="fixed top-0 left-0 right-0 z-50 p-4 text-center shadow-lg text-white bg-opacity-90 animate-slideDown">
-                {flash.message && (
+                        {flash.message && (
                             <div className="bg-green-600">{flash.message}</div>
-                )}
-                {flash.status && (
-                            <div className="bg-indigo-600">{flash.status}</div>
+                        )}
+                        {flash.status && (
+                            <div className="bg-[#1B4D3E]">{flash.status}</div>
                         )}
                     </div>
                 )}
 
-                {/* Main content */}
-                <section className="relative z-10 max-w-7xl w-full p-6 lg:p-8 animate-fadeIn">
-                    <header className="flex justify-between items-center mb-16">
-                        <h1 className="text-5xl font-bold text-center text-black">
-                            Complaint Management System
-                        </h1>
-                        <Link
-                            href={route('login')}
-                            className="px-6 py-3 bg-indigo-600 text-black rounded-lg font-semibold hover:bg-indigo-700 transition-colors duration-300 shadow-lg hover:shadow-xl"
-                        >
-                            Login
-                        </Link>
-                    </header>
-
-                    <div className="grid grid-cols-1 gap-6 mt-16 md:grid-cols-2 lg:gap-10">
-                        {/* Submit a Complaint */}
-                        <div className={`${cardBaseStyles} hover:shadow-indigo-500/30 shadow-indigo-500/10 animate-fadeInUp`}>
-                            <div className="flex flex-col items-center text-center">
-                                <div className="flex items-center justify-center w-16 h-16 mb-6 rounded-full bg-indigo-100 shadow-lg shadow-indigo-600/20 group-hover:shadow-indigo-600/30 animate-pulse-slow">
-                                    <svg
-                                        className="w-8 h-8 text-indigo-600"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth={2}
-                                        viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                        />
-                                    </svg>
-                    </div>
-                                <h2 className="mt-2 text-2xl font-bold text-black relative">
-                                        Submit a Complaint
-                                    <span className="absolute -bottom-1 left-1/2 w-0 h-0.5 bg-indigo-400 group-hover:w-full transition-all duration-300 transform -translate-x-1/2"></span>
-                                    </h2>
-                                <p className="mt-4 text-gray-600">
-                                    Have an issue that needs attention? Submit your complaint and we'll handle the rest.
-                                    </p>
-                                    <Link
-                                        href={route('complaints.create')}
-                                    className={`${linkButtonStyles} bg-indigo-100 hover:bg-indigo-200 shadow-indigo-300/30 hover:shadow-indigo-300/50 group border border-indigo-300`}
-                                    >
-                                    <span className="relative z-10 text-indigo-800">Submit Complaint</span>
-                                    <span className="absolute inset-0 bg-gradient-to-r from-indigo-200 to-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
-                                    </Link>
-                                </div>
-                            </div>
-
-                        {/* Track Complaint */}
-                        <div className={`${cardBaseStyles} hover:shadow-purple-500/30 shadow-purple-500/10 animate-fadeInUp delay-100`}>
-                            <div className="flex flex-col items-center text-center">
-                                <div className="flex items-center justify-center w-16 h-16 mb-6 rounded-full bg-purple-100 shadow-lg shadow-purple-600/20 animate-pulse-slow">
-                                    <svg
-                                        className="w-8 h-8 text-purple-600"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth={2}
-                                        viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-                                        />
-                                    </svg>
-                                </div>
-                                <h2 className="mt-2 text-2xl font-bold text-black relative">
-                                        Track Your Complaint
-                                    <span className="absolute -bottom-1 left-1/2 w-0 h-0.5 bg-purple-400 group-hover:w-full transition-all duration-300 transform -translate-x-1/2"></span>
-                                    </h2>
-                                <p className="mt-4 text-gray-600">
-                                    Already submitted a complaint? Track its progress and updates here.
-                                    </p>
-                                    <Link
-                                        href={route('complaints.track')}
-                                    className={`${linkButtonStyles} bg-purple-100 hover:bg-purple-200 shadow-purple-300/30 hover:shadow-purple-300/50 group border border-purple-300`}
-                                    >
-                                    <span className="relative z-10 text-purple-800">Track Complaint</span>
-                                    <span className="absolute inset-0 bg-gradient-to-r from-purple-200 to-purple-300 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
-                                    </Link>
-                            </div>
+                {/* Main Content */}
+                <main className="flex-grow">
+                    <div className="relative min-h-[calc(100vh-16rem)]">
+                        {/* Background elements */}
+                        <div className="absolute inset-0 z-0 overflow-hidden">
+                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1B4D3E]/10 via-gray-100 to-gray-200"></div>
+                            
+                            {/* Decorative elements */}
+                            <div className="absolute top-10 left-[10%] w-64 h-64 rounded-full bg-[#1B4D3E]/5 mix-blend-multiply animate-float-slow"></div>
+                            <div className="absolute bottom-10 right-[10%] w-96 h-96 rounded-full bg-[#2D6A4F]/5 mix-blend-multiply animate-float-medium"></div>
+                            <div className="absolute top-[40%] right-[20%] w-48 h-48 rounded-full bg-[#40916C]/5 mix-blend-multiply animate-float-fast"></div>
+                            
+                            {/* Grid pattern */}
+                            <div className="absolute inset-0 bg-grid-pattern opacity-[0.03]"></div>
                         </div>
-                    </div>
 
-                    <footer className="mt-16 text-center text-gray-600 animate-fadeInUp delay-200">
-                        <p className="relative inline-block">
-                            <span className="absolute -left-6 top-1/2 h-0.5 w-4 bg-gray-400 transform -translate-y-1/2"></span>
-                            Helping resolve issues effectively and efficiently
-                            <span className="absolute -right-6 top-1/2 h-0.5 w-4 bg-gray-400 transform -translate-y-1/2"></span>
-                        </p>
-                    </footer>
-                </section>
-            </main>
-            
-            {/* Add animation styles */}
+                        {/* Main content section */}
+                        <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20">
+                            <div className="text-center">
+                                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#1B4D3E] mb-6 sm:mb-8 animate-fadeInUp">
+                                    Welcome to Mekelle University
+                                </h1>
+                                <p className="text-lg sm:text-xl lg:text-2xl text-gray-700 max-w-3xl mx-auto mb-8 sm:mb-12 animate-fadeInUp delay-100">
+                                    Empowering Excellence Through Effective Communication
+                                </p>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto animate-fadeInUp delay-200">
+                                    <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                                        <div className="text-[#1B4D3E] text-3xl sm:text-4xl mb-4">📝</div>
+                                        <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Submit Complaints</h3>
+                                        <p className="text-sm sm:text-base text-gray-600">Share your concerns and feedback with us</p>
+                                    </div>
+                                    <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                                        <div className="text-[#1B4D3E] text-3xl sm:text-4xl mb-4">📊</div>
+                                        <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Track Progress</h3>
+                                        <p className="text-sm sm:text-base text-gray-600">Monitor the status of your submissions</p>
+                                    </div>
+                                    <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                                        <div className="text-[#1B4D3E] text-3xl sm:text-4xl mb-4">🤝</div>
+                                        <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Get Support</h3>
+                                        <p className="text-sm sm:text-base text-gray-600">Receive assistance from our dedicated team</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </main>
+            </div>
+
+            {/* Animation styles */}
             <style dangerouslySetInnerHTML={{
                 __html: `
                 @keyframes float-slow {
@@ -167,19 +223,6 @@ export default function Welcome({ auth, flash }: WelcomeProps) {
                 @keyframes float-fast {
                     0%, 100% { transform: translateY(0) translateX(0); }
                     50% { transform: translateY(-25px) translateX(5px); }
-                }
-                @keyframes pulse-slow {
-                    0%, 100% { opacity: 1; transform: scale(1); }
-                    50% { opacity: 0.8; transform: scale(1.05); }
-                }
-                @keyframes gradient {
-                    0% { background-position: 0% 50%; }
-                    50% { background-position: 100% 50%; }
-                    100% { background-position: 0% 50%; }
-                }
-                @keyframes fadeIn {
-                    0% { opacity: 0; }
-                    100% { opacity: 1; }
                 }
                 @keyframes fadeInUp {
                     0% { opacity: 0; transform: translateY(20px); }
@@ -198,16 +241,6 @@ export default function Welcome({ auth, flash }: WelcomeProps) {
                 }
                 .animate-float-fast {
                     animation: float-fast 4s ease-in-out infinite;
-                }
-                .animate-pulse-slow {
-                    animation: pulse-slow 3s ease-in-out infinite;
-                }
-                .animate-gradient {
-                    background-size: 200% 200%;
-                    animation: gradient 8s ease infinite;
-                }
-                .animate-fadeIn {
-                    animation: fadeIn 0.8s ease-out forwards;
                 }
                 .animate-fadeInUp {
                     animation: fadeInUp 0.6s ease-out forwards;

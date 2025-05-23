@@ -22,11 +22,13 @@
         "vite": "^6.3.5"
     },
     "dependencies": {
+        "@heroicons/react": "^1.0.6",
         "@inertiajs/inertia-react": "^0.8.1",
         "@inertiajs/react": "^2.0.9",
         "@types/react": "^19.1.4",
         "@types/react-dom": "^19.1.5",
         "@vitejs/plugin-react": "^4.4.1",
+        "@windmill/react-ui": "^0.6.0",
         "chart.js": "^4.4.9",
         "react-chartjs-2": "^5.3.0",
         "typescript": "^5.8.3",
